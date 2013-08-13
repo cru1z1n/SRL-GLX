@@ -1,0 +1,638 @@
+{$loadlib GLX}
+{$include_once GLX/Internals.Simba}
+//OffsetOf - PtrUInt(@(CStruct(nil + 1)^.Y)) - 1;
+
+type
+  GL_DEBUG_MODE = (GL_MODE_NONE, GL_MODE_TEXTURES, GL_MODE_MODELS, GL_MODE_FONTS, GL_MODE_HUD);
+
+
+type glTexture = record
+  ID: Integer;
+  ColourID: Integer;
+  X, Y: Integer;
+  Bounds: TBox;
+end;
+
+type glModel = record
+  ID: Cardinal;
+  TID: Integer;
+  X, Y: Integer;
+end;
+
+type glChar = record
+  Colour: Cardinal;
+  X, Y: Integer;
+  Letter: Char;
+  Shadow: Boolean;
+  Translate: Array[0..2] of Single;
+  Bounds: TBox;
+end;
+
+type glText = record
+  Text: String;
+  Bounds: TBox;
+end;
+
+type glTextEx = record
+  Text: Array Of String;
+  Areas: Array Of TBox;
+  Colours: Array Of Integer;
+end;
+
+
+type
+  glCharArray = array of glChar;
+  glTextArray = array of glText;
+  glTextExArray = array of glTextEx;
+  glModelArray = array of glModel;
+  glTextureArray = array of glTexture;
+
+Procedure Pointer.Inc(Size: Int64);
+Begin
+  Self := Self + Size;
+End;
+
+Function glTextureBounds(var A, B: glTexture): TBox;
+Begin
+  Result := IntToBox(A.Bounds.X1, A.Bounds.Y1, B.Bounds.X2, B.Bounds.Y2);
+  If (Result.X1 > Result.X2) Then
+  Begin
+    Result.X1 := B.Bounds.X1;
+    Result.X2 := A.Bounds.X2;
+  End;
+
+  If (Result.Y1 > Result.Y2) Then
+  Begin
+    Result.Y1 := B.Bounds.Y1;
+    Result.Y2 := B.Bounds.Y2;
+  End;
+End;
+
+Procedure glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal = 0; X1, Y1, X2, Y2: Integer = 0);
+Begin
+  GLXDebug(Ord(Mode), HudID, X1, Y1, X2, Y2);
+End;
+
+Procedure glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal; Area: TBox); overload;
+Begin
+  GLXDebug(Ord(Mode), HudID, Area.X1, Area.Y1, Area.X2, Area.Y2);
+End;
+
+Function glGetTextures: glTextureArray;
+var
+  Size, I: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    Result[I] := glTexture(Ptr^);
+    Ptr.Inc(sizeof(glTexture));
+  End;
+End;
+
+Function glGetTextures(ID: Integer): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (Integer(Ptr^) = ID) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(IDs: TIntegerArray): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (IDs.Contains(Integer(Ptr^))) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(Area: TBox): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area)) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(ID: Integer; Area: TBox): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if ((Integer(Ptr^) = ID) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(IDs: TIntegerArray; Area: TBox): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (IDs.Contains(Integer(Ptr^)) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(ID, ColourID, Tolerance: Cardinal): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if ((Integer(Ptr^) = ID) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourID, Tolerance))) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray): glTextureArray; overload;
+var
+  Size, I, J, K: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    For J := 0 To High(IDs) Do
+      If ((IDs[J] = Integer(Ptr^)) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourIDs[J], Tolerances[J]))) then
+      begin
+        Result[K] := glTexture(Ptr^);
+        Inc(K);
+        Break;
+      end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, K);
+End;
+
+Function glGetTextures(ID, ColourID, Tolerance: Cardinal; Area: TBox): glTextureArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if ((Integer(Ptr^) = ID) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourID, Tolerance)) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    begin
+      Result[J] := glTexture(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray; Area: TBox): glTextureArray; overload;
+var
+  Size, I, J, K: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXTextures(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    For J := 0 To High(IDs) Do
+      If ((IDs[J] = Integer(Ptr^)) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourIDs[J], Tolerances[J])) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+      begin
+        Result[K] := glTexture(Ptr^);
+        Inc(K);
+        Break;
+      end;
+    Ptr.Inc(sizeof(glTexture));
+  End;
+  SetLength(Result, K);
+End;
+
+Function glGetModels: glModelArray;
+var
+  Size, I: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXModels(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    Result[I] := glModel(Ptr^);
+    Ptr.Inc(sizeof(glModel));
+  End;
+End;
+
+Function glGetModels(ID: Cardinal): glModelArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXModels(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (Cardinal(Ptr^) = ID) then
+    begin
+      Result[J] := glModel(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glModel));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetModels(IDs: TCardinalArray): glModelArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXModels(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (IDs.Contains(Cardinal(Ptr^))) then
+    begin
+      Result[J] := glModel(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glModel));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetModels(Area: TBox): glModelArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXModels(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area)) then
+    begin
+      Result[J] := glModel(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glModel));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetModels(ID: Cardinal; Area: TBox): glModelArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXModels(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if ((Cardinal(Ptr^) = ID) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    begin
+      Result[J] := glModel(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glModel));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetModels(IDs: TCardinalArray; Area: TBox): glModelArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXModels(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (IDs.Contains(Cardinal(Ptr^)) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    begin
+      Result[J] := glModel(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glModel));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glGetChars: glCharArray;
+var
+  Size, I: Cardinal;
+  Ptr: Pointer;
+Begin
+  Result := [];
+  Ptr := GLXFonts(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    Result[I] := glChar(Ptr^);
+    Ptr.Inc(sizeof(glChar));
+  End;
+End;
+
+Function glGetChars(Area: TBox): glCharArray; overload;
+var
+  Size, I, J: Cardinal;
+  Ptr: Pointer;
+Begin
+  J := 0;
+  Result := [];
+  Ptr := GLXFonts(Size);
+  SetLength(Result, Size);
+
+  For I := 0 To Size - 1 Do
+  Begin
+    if (PointInBox(Point(Integer((Ptr + sizeof(Integer))^), Integer((Ptr + (sizeof(Integer) * 2))^)), Area)) then
+    begin
+      Result[J] := glChar(Ptr^);
+      Inc(J);
+    end;
+    Ptr.Inc(sizeof(glChar));
+  End;
+  SetLength(Result, J);
+End;
+
+Function glRemoveTextShadows(var Chars: glCharArray): glCharArray;
+var
+  I, J: Integer;
+begin
+  J := 0;
+  SetLength(Result, length(chars));
+  For I := 0 To High(chars) do
+  begin
+    if ((I <= High(Chars) - 1) and (Chars[I].X - Chars[I + 1].X = 1)) then
+      Inc(I);
+    Result[J] := Chars[I];
+    Inc(J);
+  end;
+  SetLength(Result, J);
+end;
+
+Function glGetCharSpacing(var glChars: glCharArray): Integer;
+var
+  I, W, S: Integer = 0;
+Begin
+  Result := 0;
+  glChars := glRemoveTextShadows(glChars);
+
+  For I := 0 To High(glChars) do
+  begin
+    W := abs(glChars[I].Bounds.X2 - glChars[I].Bounds.X1);
+    S := round(abs(glChars[I + 1].Translate[0] - (glChars[I].Translate[0] + W)));
+    if ((I < High(glChars)) and (S >= Result)) then
+      Result := S;
+  end;
+End;
+
+Function glCharsToText(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): TStringArray;
+var
+  I, W: Integer;
+  Str: String;
+begin
+  glChars := glRemoveTextShadows(glChars);
+  For I := 0 To High(glChars) do
+  begin
+    Str := Str + glChars[I].Letter;
+    W := abs(glChars[I].Bounds.X2 - glChars[I].Bounds.X1);
+
+    if (I < High(glChars)) then
+      if (abs(round(glChars[I + 1].Translate[0] - (glChars[I].Translate[0] + W))) >= MinHSpacing) then
+        Str := Str + ' ';
+
+    if ((I < High(glChars)) and abs(glChars[I + 1].Y - glChars[I].Y) >= MinVSpacing) then
+      Str := Str + '\r\n';
+  end;
+
+  ExplodeWrap('\r\n', Trim(Str), Result);
+end;
+
+Function glCharsToTexts(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): glTextArray;
+var
+  I, J, W, H, K: Integer;
+  Even: Boolean;
+  NewLine: Boolean = True;
+begin
+  glChars := glRemoveTextShadows(glChars);
+  Even := (Length(glChars) mod 2) = 0;
+  For I := 0 To High(glChars) do
+  begin
+    If (NewLine) then
+    begin
+      SetLength(Result, J + 1);
+      Result[J].Bounds.X1 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1);
+      Result[J].Bounds.Y1 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1);
+      NewLine := False;
+    end;
+
+    Result[J].Text := Result[J].Text + glChars[I].Letter;
+    W := abs(glChars[I].Bounds.X2 - glChars[I].Bounds.X1);
+    H := abs(glChars[I].Bounds.Y2 - glChars[I].Bounds.Y1);
+
+    if (I < High(glChars)) then
+      if (abs(round(glChars[I + 1].Translate[0] - (glChars[I].Translate[0] + W))) >= MinHSpacing) then
+        Result[J].Text := Result[J].Text + ' ';
+
+    if ((I <= High(glChars)) and abs(glChars[I + 1].Y - glChars[I].Y) >= MinVSpacing) then
+    begin
+      Result[J].Bounds.X2 := round(glChars[I].Translate[0] + glChars[I].Bounds.X2);
+      Result[J].Bounds.Y2 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y2);
+      NewLine := True;
+      Inc(J);
+    end;
+  end;
+end;
+
+Function glCharsToTextEx(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): glTextExArray;
+var
+  I, J, K, W, H: Integer = 0;
+  NewIndex, NewLine: Boolean = True;
+begin
+  glChars := glRemoveTextShadows(glChars);
+  For I := 0 To High(glChars) do
+  begin
+    W := abs(glChars[I].Bounds.X2 - glChars[I].Bounds.X1);
+    H := abs(glChars[I].Bounds.Y2 - glChars[I].Bounds.Y1);
+
+    if (NewLine) then
+    begin
+      SetLength(Result, J + 1);
+      SetLength(Result[J].Text, 1);
+      SetLength(Result[J].Areas, 1);
+      Result[J].Areas[0].X1 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1);
+      Result[J].Areas[0].Y1 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1);
+      NewLine := False;
+    end;
+
+    Result[J].Text[0] := Result[J].Text[0] + glChars[I].Letter;
+    if (I < High(glChars)) then
+      if (abs(round(glChars[I + 1].Translate[0] - (glChars[I].Translate[0] + W))) >= MinHSpacing) then
+        Result[J].Text[0] := Result[J].Text[0] + ' ';
+
+    if ((I <= High(glChars)) and abs(glChars[I + 1].Y - glChars[I].Y) >= MinVSpacing) then
+    begin
+      Result[J].Areas[0].X2 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1 + W);
+      Result[J].Areas[0].Y2 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1 + H);
+      NewLine := True;
+      Inc(J);
+      K := 0;
+    end;
+  end;
+end;
+
+
+Function glCharsToTextAdv(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): glTextExArray;
+var
+  I, J, K, L, W, H: Integer = 0;
+  NewIndex, NewLine: Boolean = True;
+begin
+  glChars := glRemoveTextShadows(glChars);
+  For I := 0 To High(glChars) do
+  begin
+    W := abs(glChars[I].Bounds.X2 - glChars[I].Bounds.X1);
+    H := abs(glChars[I].Bounds.Y2 - glChars[I].Bounds.Y1);
+
+    if (NewLine) then
+    begin
+      SetLength(Result, J + 1);
+      SetLength(Result[J].Text, L + 1);
+      SetLength(Result[J].Areas, K + 1);
+      SetLength(Result[J].Colours, K + 1);
+      Result[J].Colours[K] := glChars[I].Colour;
+      Result[J].Areas[K].X1 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1);
+      Result[J].Areas[K].Y1 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1);
+      NewLine := False;
+    end;
+
+    Result[J].Text[L] := Result[J].Text[L] + glChars[I].Letter;
+    if ((I < High(glChars)) and (round(abs(glChars[I + 1].Translate[0] - (glChars[I].Translate[0] + W))) >= MinHSpacing)) then
+      Result[J].Text[L] := Result[J].Text[L] + ' ';
+
+    if ((I <= High(glChars)) and abs(glChars[I + 1].Y - glChars[I].Y) >= MinVSpacing) then
+    begin
+      Result[J].Areas[K].X2 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1 + W);
+      Result[J].Areas[K].Y2 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1 + H);
+      NewLine := True;
+      Inc(J);
+      K := 0;
+    end else
+      if ((I < High(glChars)) and (glChars[I + 1].Colour <> glChars[I].Colour)) then
+      begin
+        Result[J].Areas[K].X2 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1 + W);
+        Result[J].Areas[K].Y2 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1 + H);
+        Inc(K);
+        Inc(I);
+
+        Result[J].Text[L] := Result[J].Text[L] + glChars[I].Letter;
+        W := abs(glChars[I].Bounds.X2 - glChars[I].Bounds.X1);
+        H := abs(glChars[I].Bounds.Y2 - glChars[I].Bounds.Y1);
+        SetLength(Result[J].Areas, K + 1);
+        SetLength(Result[J].Colours, K + 1);
+        Result[J].Colours[K] := glChars[I].Colour;
+        Result[J].Areas[K].X1 := round(glChars[I].Translate[0] + glChars[I].Bounds.X1);
+        Result[J].Areas[K].Y1 := round(glChars[I].Translate[1] + glChars[I].Bounds.Y1);
+      end;
+  end;
+end;

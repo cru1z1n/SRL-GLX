@@ -1,0 +1,192 @@
+{$include_once GLX/GLXCore.Simba}
+{$include_once GLX/Cache.Simba}
+
+type FloatPoint = record
+  X, Y: Single;
+end;
+
+Function FloatPoint.Create(__X, __Y: Single): FloatPoint;
+Begin
+  Self.X := __X;
+  Self.Y := __Y;
+  Result := Self;
+End;
+
+Function ShortestArcDeg(Angle, Target: Single): Single;
+Begin
+  If (abs(Target - Angle) < 180) Then
+  Begin
+    Result := Target - Angle;
+    Exit;
+  End;
+
+  If (Target > Angle) Then
+  Begin
+    Result := Target - Angle - 360;
+    Exit;
+  End;
+  Result := Target - Angle + 360;
+End;
+
+Function ShortestArcRag(Angle, Target: Single): Single;
+Begin
+  If (abs(Target - Angle) < PI) Then
+  Begin
+    Result := Target - Angle;
+    Exit;
+  End;
+
+  If (Target > Angle) Then
+  Begin
+    Result := Target - Angle - PI * 2;
+    Exit;
+  End;
+  Result := Target - Angle + PI * 2;
+End;
+
+Function GL_GetMinimapBounds: TBox;
+var
+  I: Integer;
+  Background, Corners: glTextureArray;
+Begin
+  If (UseSysCache) Then
+  Begin
+    I := SysCache.Contains(CACHE_MINIMAP);
+    if (I <> -1) Then
+    Begin
+      Result := SysCache[I].Area;
+      Exit;
+    End;
+  End;
+
+  Background := glGetTextures(3786240);
+  Corners := glGetTextures(386460);
+  If (Length(Background) < 1) or (Length(Corners) < 1) Then Exit;
+
+  For I := 0 To High(Background) Do
+    If (PointInBox(Point(Corners[0].X, Corners[0].Y), Background[I].Bounds)) then
+    Begin
+      Result := Background[I].Bounds;
+      If (UseSysCache) Then
+        SysCache.CacheMinimap(Result);
+      Exit;
+    End;
+End;
+
+Procedure GL_GetMapCoords(var TL, BL, BR, TR: FloatPoint);
+var
+  T: FloatPoint;
+  X, Y: Array[0..3] of single;
+begin
+  GLXMapCoords(X, Y);
+  TL := T.Create(X[0], Y[0]);
+  BL := T.Create(X[1], Y[1]);
+  BR := T.Create(X[2], Y[2]);
+  TR := T.Create(X[3], Y[3]);
+end;
+
+Function GL_GetLocalPos: TPoint;
+var
+  Player: TPoint;
+  TL, BL, BR, TR: FloatPoint;
+  PPX, PPY, PPZ: Double;
+  TVX, TVY, BVX, BVY: Double;
+Begin
+  If (Not GL_LoggedIn) Then Exit;
+  GL_GetMapCoords(TL, BL, BR, TR);
+  Player := MiddleBox(GL_GetMinimapBounds);
+
+  TVX := TR.X - TL.X;
+  TVY := TR.Y - TL.Y;
+  BVX := BL.X - TL.X;
+  BVY := BL.Y - TL.Y;
+  PPX := Player.X - TL.X;
+  PPY := Player.Y - TL.Y;
+  PPZ := (TVX * BVY) - (TVY * BVX);
+  Result.X := Round(((PPX * BVY) - (PPY * BVX)) * 512.0 / PPZ);
+  Result.Y := Round(((PPY * TVX) - (PPX * TVY)) * 512.0 / PPZ);
+End;
+
+Function GL_MakeCompass(Angle: Single; Tolerance: Integer = 5): Boolean;
+var
+  T: Timer;
+  Left: Boolean;
+  AngleDistance: Single;
+  CurrentAngle, RA: Integer;
+Begin
+  GL_OldCompass(CurrentAngle, RA);
+  If ((CurrentAngle < 0) or (Not GL_LoggedIn)) Then
+    Exit;
+
+  Angle := FixD(Angle);
+  T.Start();
+
+  While ((Abs(ShortestArcDeg(CurrentAngle, Angle)) > Tolerance) and (T.TimeElapsed() < 10000)) do
+  Begin
+    AngleDistance := CurrentAngle - Angle;
+    Left := ((AngleDistance > 0) and (abs(AngleDistance) <= 180)) or ((AngleDistance < 0) and (abs(AngleDistance) > 180));
+    if (Left) Then
+      KeyDown(VK_LEFT)
+    Else
+      KeyDown(VK_RIGHT);
+
+    GL_OldCompass(CurrentAngle, RA);
+    Result := Abs(ShortestArcDeg(CurrentAngle, Angle)) <= Tolerance;
+    If (Result) Then
+    Begin
+      If (Left) Then
+        KeyUp(VK_LEFT)
+      Else
+        KeyUp(VK_RIGHT);
+      Break;
+    End;
+    Wait(RandomRange(16, 20));
+  End;
+
+  If (Left) Then
+    KeyUp(VK_LEFT)
+  Else
+    KeyUp(VK_RIGHT);
+  Result := Abs(ShortestArcDeg(CurrentAngle, Angle)) <= Tolerance;
+End;
+
+Function GL_MakeCompassHeight(Height: Integer; Tolerance: Integer = 4): Boolean;
+var
+  T: Timer;
+  Up: Boolean;
+  CurrentHeight: Integer;
+Begin
+  CurrentHeight := GLXCompassHeightDeg;
+  If ((CurrentHeight < 0) or (Not GL_LoggedIn)) Then
+    Exit;
+
+  T.Start();
+  If (Height <= 5) Then Height := RandomRange(5, 7);
+
+  While((abs(CurrentHeight - Height) > Tolerance) and (T.TimeElapsed() < 10000)) do
+  Begin
+    Up := Height > CurrentHeight;
+    If (Up) Then
+      KeyDown(VK_UP)
+    Else
+      KeyDown(VK_DOWN);
+
+    CurrentHeight := GLXCompassHeightDeg;
+    Result := abs(CurrentHeight - Height) <= Tolerance;
+    If (Result) Then
+    Begin
+      If (Up) Then
+        KeyUp(VK_UP)
+      Else
+        KeyUp(VK_DOWN);
+      Break;
+    End;
+    Wait(RandomRange(5, 10));
+  End;
+
+  If (Up) Then
+    KeyUp(VK_UP)
+  Else
+    KeyUp(VK_DOWN);
+  Result := Abs(CurrentHeight - Height) <= Tolerance;
+End;

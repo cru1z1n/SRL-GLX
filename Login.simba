@@ -1,0 +1,119 @@
+{$include_once GLX/Mouse.Simba}
+
+const
+  GLI_Compass         = 192278;
+  GLIC_Compass        = 2893598;
+  GLI_LobbyTab        = 564570;
+  GLI_RSLogo          = 2021324;
+  GLI_LobbyExit       = 9369;
+
+Function GL_LoggedIn: Boolean;
+Begin
+  Result := (Length(glGetTextures(GLI_Compass, GLIC_Compass, 5)) > 0);
+End;
+
+Function GL_LobbyScreen: Boolean;
+Begin
+  Result := (Length(glGetTextures(GLI_LobbyTab)) = 6);
+End;
+
+Function GL_RSReady: Boolean;
+Begin
+  Result := (GL_LoggedIn) Or (GL_LobbyScreen);
+
+  If (Not Result) Then
+    Result := (Length(glGetTextures(GLI_RSLogo)) > 0);
+End;
+
+Function GL_ExitToLobby: Boolean;
+Begin
+
+End;
+
+Function GL_LeaveLobby: Boolean;
+var
+  T: LongInt;
+  Textures: glTextureArray;
+Begin
+  T := GetSystemTime;
+  While ((Not Result) And ((GetSystemTime - T) < 30000)) Do
+  Begin
+    Textures := glGetTextures(GLI_LobbyExit);
+    If (Length(Textures) > 0) Then
+      MouseBox(Textures[0].Bounds);
+
+    Wait(RandomRange(1000, 2000));
+    Result := (Not (GL_LobbyScreen));
+  End;
+End;
+
+Function GL_LoginToLobby(Player: TPlayer): Boolean;
+var
+  I, J: Integer;
+  T: Timer;
+  Area: TBox;
+  Text: glTextArray;
+  Textures: glTextureArray;
+Label
+  Start;
+Begin
+  Result := (GL_LoggedIn or GL_LobbyScreen);
+  If (Result) Then Exit;
+
+  Start:
+  T.Start();
+  Repeat
+    If (GL_RSReady) Then Break;
+    If (T.TimeElapsed() > 180000) Then
+    Begin
+      WriteLn('It has been 3 minutes and Runescape is not yet ready... Terminating.');
+      TerminateScript;
+    End;
+    Wait(RandomRange(1000, 2000));
+  Until(False);
+
+  T.Reset();
+  WriteLn('Welcome to Runescape.');
+  Textures := glGetTextures([76466, 76453]);
+  If (Length(Textures) < 1) Then Exit;
+
+  For I := 0 To 1 Do
+  Begin
+    If (I = 0) Then
+      Area := glTextureBounds(Textures[0], Textures[1])
+    Else
+      Area := glTextureBounds(Textures[2], Textures[3]);
+
+    Text := glCharsToTexts(glGetChars(Area), 2, 5);
+    If (Length(Text) > 0) Then
+    Begin
+      Mouse(Text[0].Bounds.X2, (Text[0].Bounds.Y1 + Text[0].Bounds.Y2) div 2, 2, 2, MOUSE_LEFT);
+      While(Length(Text) > 0) Do
+      Begin
+        Text := glCharsToTexts(glGetChars(Area), 2, 5);
+        TypeByte(VK_BACK);
+        Wait(25 + Random(20));
+      End;
+    End;
+
+    Wait(Random(300));
+
+    If (I = 0) Then
+    Begin
+      WriteLn(Capitalize(Player.Name));
+      TypeSend(Player.Name);
+    End Else
+      TypeSend(Player.Pass);
+    Wait(800 + Random(50));
+  End;
+
+  T.Start();
+  Repeat
+    If (T.TimeElapsed() > 60000) Then
+      Goto Start;
+
+    If (GL_LobbyScreen) Then
+      Break;
+  Until(False);
+  Result := True;
+End;

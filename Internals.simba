@@ -1,0 +1,102 @@
+var
+  OnTerminateProcs: TStringArray;
+
+type TCardinalArray = array of Cardinal;
+
+Procedure Delete(Ptr: Pointer; var Pointers: Array of Pointer); overload;
+var
+  I, J: Integer = 0;
+  Ptrs: Array of Pointer;
+begin
+  SetLength(Ptrs, Length(Pointers));
+  For I := 0 To High(Pointers) do
+    if (Pointers[I] <> Ptr) then
+    begin
+      Ptrs[J] := Pointers[I];
+      Inc(J);
+    end;
+  SetLength(Ptrs, J);
+  Pointers := Ptrs;
+end;
+
+Function TIntegerArray.Contains(Value: Integer): Boolean;
+var
+  I: Integer;
+Begin
+  For I := 0 To High(Self) Do
+    if (Self[I] = Value) then
+    begin
+      Result := True;
+      Exit;
+    end;
+  Result := False;
+End;
+
+Function TCardinalArray.Contains(Value: Cardinal): Boolean;
+var
+  I: Integer;
+Begin
+  For I := 0 To High(Self) Do
+    if (Self[I] = Value) then
+    begin
+      Result := True;
+      Exit;
+    end;
+  Result := False;
+End;
+
+Function TStringArray.Contains(Value: String; CaseSensitive: Boolean = True): Boolean;
+var
+  I: Integer;
+Begin
+  If (CaseSensitive) then
+    Value := LowerCase(Value);
+
+  For I := 0 To High(Self) Do
+    if (CaseSensitive) then
+    begin
+      if (LowerCase(Self[I]) = Value) then
+      begin
+        Result := True;
+        Exit;
+      end;
+    end else
+      if (Self[I] = Value) then
+      begin
+        Result := True;
+        Exit;
+      end;
+  Result := False;
+End;
+
+procedure TerminateScript; override;
+var
+  I: Integer;
+begin
+  For I := 0 to High(OnTerminateProcs) Do
+  begin
+    VariantInvoke(OnTerminateProcs[I]);
+  end;
+  inherited();
+end;
+
+procedure AddOnTerminate(const Proc: string);
+var
+  I, L: Integer;
+begin
+  For I := 0 To High(OnTerminateProcs) Do
+    if (OnTerminateProcs.Contains(Proc, False)) then
+      Exit;
+
+  L := Length(OnTerminateProcs);
+  SetLength(OnTerminateProcs, L + 1);
+  OnTerminateProcs[L] := Proc;
+end;
+
+procedure AddOnTerminate(const Procs: TStringArray); overload;
+var
+  I: Integer;
+begin
+  For I := 0 To High(OnTerminateProcs) Do
+    AddOnTerminate(Procs[I]);
+end;

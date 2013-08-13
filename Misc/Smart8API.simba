@@ -1,0 +1,148 @@
+{$DEFINE SMART}
+{$loadlib libsmartremote}
+{$include_once GLX/Internals.Simba}
+{$include_once GLX/Misc/Graphics.Simba}
+
+type TSmart = record
+  __PID: Integer;
+  __Width, __Height: Integer;
+  __ForceNew: Boolean;
+  __Graphics: TGraphics;
+end;
+
+Procedure TSmart.Create;
+Begin
+  Self.Create(1024, 768, ['']);
+End;
+
+Procedure TSmart.Create(Width, Height: Integer; Plugins: TStringArray = []); overload;
+Begin
+  Self.Create(Width, Height, 's', Plugins);
+End;
+
+Procedure TSmart.Create(Width, Height: Integer; InitSequence: String; Plugins: TStringArray = []); overload;
+var
+  Params: TStringArray;
+Begin
+  Self.__Width := Width;
+  Self.__Height := Height;
+
+  If (Not Self.__ForceNew And Self.Pair()) then
+    Exit;
+
+  Params := self.GetParams();
+  If (Length(Params) <> 2) then
+  begin
+    Writeln('** Failed To Grab Smart Parameters **');
+    Writeln('** Please check your internet connection/firewall **');
+    TerminateScript;
+    Exit;
+  end;
+
+  Self.__PID := SmartSpawnClient(Replace(PluginPath, '\', '/', [rfReplaceAll]), Params[0], ',' + Params[1], Width, Height, InitSequence, '', '', Implode(',', Plugins));
+  If (Self.__PID <> 0) Then
+  begin
+    try
+      SetEIOSTarget('libsmartremote', ToStr(Self.__PID));
+      Writeln('Loading SMART: ' + Params[0] + Params[1]);
+      Self.__Graphics.Create(Width, Height, SmartDebugArray);
+    except
+      WriteLn('** Fatal Error: Pairing Clients; Terminating Script **');
+      TerminateScript;
+    end;
+  end else
+    begin
+      Writeln('** Smart Cannot Spawn Clients **');
+      TerminateScript;
+    end;
+End;
+
+Function TSmart.Pair: Boolean;
+var
+  I, Count: Integer;
+  Indices: TIntegerArray;
+Begin
+  Indices := Self.GetPIDs(True);
+  Count := Length(Indices);
+  If (Count > 0) Then
+    For I:= 0 To Count - 1 Do
+    Begin
+      If SmartPairClient(Indices[I]) then
+      begin
+        Self.__PID := Indices[I];
+        SetEIOSTarget('libsmartremote', ToStr(Self.__PID));
+        Writeln('Paired with SMART[' + ToStr(Self.__PID) + ']');
+        Self.__Graphics.Create(Self.__Width, Self.__Height, SmartDebugArray);
+        Result := True;
+        Exit;
+      end;
+    End;
+End;
+
+Procedure TSmart.Free;
+Begin
+  Self.__Graphics.Free;
+  Self.__Height := 0;
+  Self.__Width := 0;
+  Self.__PID := 0;
+End;
+
+Function TSmart.GetParams: TStringArray;
+var
+  Params: TStringArray;
+  Page: String;
+Begin
+  Page := Between('<iframe id="game" src="', '"', GetPage('http://www.runescape.com/game.ws?j=1'));
+  Params := Explode(',', Page);
+  Result := Params;
+End;
+
+Function TSmart.GetPIDs(UnPaired: Boolean): TIntegerArray;
+var
+  I, Count: Integer;
+Begin
+  Count := SmartGetClients(UnPaired);
+  SetLength(Result, Count);
+  If (Count > 0) Then
+    For I:= 0 to Count - 1 do
+      Result[I] := SmartClientID(I);
+End;
+
+Function TSmart.Width: Integer;
+Begin
+  Result := Self.__Width;
+End;
+
+Function TSmart.Height: Integer;
+Begin
+  Result := Self.__Height;
+End;
+
+Function TSmart.Graphics: TGraphics;
+Begin
+  Result := Self.__Graphics;
+End;
+
+Function TSmart.ID: Integer;
+Begin
+  Result := Self.__PID;
+End;
+
+Function TSmart.ImageArray: Integer;
+Begin
+  Result := SmartImageArray;
+End;
+
+Function TSmart.DebugArray: Integer;
+Begin
+  Result := SmartDebugArray;
+End;
+
+Procedure TSmart.Destroy;
+Begin
+  SmartKillClient(Self.__PID);
+  Self.__Graphics.Free;
+  Self.__Height := 0;
+  Self.__Width := 0;
+  Self.__PID := 0;
+End;

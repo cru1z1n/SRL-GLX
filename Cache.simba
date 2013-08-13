@@ -1,0 +1,99 @@
+type TCacheType = (CACHE_INV, CACHE_MINIMAP, CACHE_CHAT, CACHE_INVSLOTS);
+
+type TCache = record
+  ID: Integer;
+  Location: TPoint;
+  Area: TBox;
+  Slots: TBoxArray;
+end;
+
+type TCacheArray = Array of TCache;
+
+var
+  UseSysCache: Boolean;
+  SysCache: TCacheArray;
+
+Function TCache.Create(ID: TCacheType; Location: TPoint; Area: TBox; InvSlots: TBoxArray): TCache;
+Begin
+  Self.ID := ID;
+  Self.Location := Location;
+  Self.Area := Area;
+  Self.Slots := InvSlots;
+  Result := Self;
+End;
+
+Function TCacheArray.Contains(ID: TCacheType): Integer;
+var
+  I: Integer;
+Begin
+  For I := 0 To High(Self) Do
+    If (Self[I].ID = ID) Then
+    Begin
+      Result := I;
+      Exit;
+    End;
+  Result := -1;
+End;
+
+Function TCacheArray.GetCache(ID: TCacheType): TCache;
+var
+  Index: Integer;
+Begin
+  Index := Self.Contains(ID);
+  If (Index <> -1) Then
+    Result := Self[Index]
+  Else
+    Result.ID = -1;
+End;
+
+Procedure TCacheArray.CacheInventory(Area: TBox);
+var
+  Index: Integer;
+  InvCache: TCache;
+Begin
+  Index := SysCache.Contains(CACHE_INV);
+  If (Index = -1) Then
+  Begin
+    Insert(InvCache.Create(CACHE_INV, MiddleBox(Area), Area, []), SysCache);
+  End Else
+    SysCache[Index] := InvCache.Create(CACHE_INV, MiddleBox(Area), Area, []);
+End;
+
+Procedure TCacheArray.CacheInventorySlots(Areas: TBoxArray);
+var
+  Index: Integer;
+  InvCache: TCache;
+Begin
+  Index := SysCache.Contains(CACHE_INVSLOTS);
+  If (Index = -1) Then
+  Begin
+    Insert(InvCache.Create(CACHE_INVSLOTS, Point(-1, -1), IntToBox(-1, -1, -1, -1), Areas), SysCache);
+  End Else
+    SysCache[Index] := InvCache.Create(CACHE_INVSLOTS, Point(-1, -1), IntToBox(-1, -1, -1, -1), Areas);
+End;
+
+Procedure TCacheArray.CacheMiniMap(Area: TBox);
+var
+  Index: Integer;
+  InvCache: TCache;
+Begin
+  Index := SysCache.Contains(CACHE_MINIMAP);
+  If (Index = -1) Then
+  Begin
+    Insert(InvCache.Create(CACHE_MINIMAP, MiddleBox(Area), Area, []), SysCache);
+  End Else
+    SysCache[Index] := InvCache.Create(CACHE_MINIMAP, MiddleBox(Area), Area, []);
+End;
+
+Procedure TCacheArray.CacheChat(Area: TBox);
+var
+  Index: Integer;
+  InvCache: TCache;
+Begin
+  Index := SysCache.Contains(CACHE_CHAT);
+  If (Index = -1) Then
+  Begin
+    Insert(InvCache.Create(CACHE_CHAT, MiddleBox(Area), Area, []), SysCache);
+  End Else
+    SysCache[Index] := InvCache.Create(CACHE_CHAT, MiddleBox(Area), Area, []);
+End;

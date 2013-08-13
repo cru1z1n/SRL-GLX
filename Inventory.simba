@@ -1,0 +1,81 @@
+{$include_once GLX/GLXCore.Simba}
+{$include_once GLX/Bank.Simba}
+{$include_once GLX/Cache.Simba}
+
+Function GL_InvBounds: TBox;
+var
+  I: Integer;
+  Background, Slots: glTextureArray;
+Begin
+  If (UseSysCache) Then
+  Begin
+    I := SysCache.Contains(CACHE_INV);
+    if (I <> -1) Then
+    Begin
+      Result := SysCache[I].Area;
+      Exit;
+    End;
+  End;
+
+  Background := glGetTextures(3786240);
+  Slots := glGetTextures(88625);
+
+  if (Length(Background) < 1) or (Length(Slots) < 1) Then
+    Exit;
+
+  For I := 0 To High(Background) Do
+    If (PointInBox(Point(Slots[0].X, Slots[0].Y), Background[I].Bounds)) then
+    begin
+      Result.X1 := Slots[0].Bounds.X1;
+      Result.Y1 := Slots[0].Bounds.Y1;
+      Result.X2 := BackGround[I].Bounds.X2;
+      Result.Y2 := BackGround[I].Bounds.Y2;
+      If (UseSysCache) Then
+        SysCache.CacheInventory(Result);
+      Exit;
+    end;
+End;
+
+Function GL_CountInvSlots: Integer;
+Begin
+  Result := Length(glGetTextures(88625, GL_InvBounds));
+End;
+
+Function GL_InvSlots: TBoxArray;
+var
+  I: Integer;
+  Slots: glTextureArray;
+Begin
+  If (UseSysCache) Then
+  Begin
+    I := SysCache.Contains(CACHE_INVSLOTS);
+    if (I <> -1) Then
+    Begin
+      Result := SysCache[I].Slots;
+      Exit;
+    End;
+  End;
+  Slots := glGetTextures(88625, GL_InvBounds);
+  SetLength(Result, Length(Slots));
+  For I := 0 To High(Slots) Do
+    Result[I] := Slots[I].Bounds;
+
+  If (UseSysCache) Then
+    SysCache.CacheInventorySlots(Result);
+End;
+
+Function GL_InvCount: Integer;
+Begin
+  If (Length(glGetTextures(GL_InvBounds)) < 1) Then
+    Result := 0
+  Else If (GL_BankScreen) Then
+    Result := Length(glGetTextures(GL_InvBounds)) - 47
+  Else
+    Result := Length(glGetTextures(GL_InvBounds)) - 37;
+  If (Result < 0) Then Result := 0;
+End;
+
+Function GL_InvFull: Boolean;
+Begin
+  Result := GL_InvCount >= 28;
+End;

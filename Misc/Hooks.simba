@@ -1,0 +1,101 @@
+const
+  ClientRevision = 16;
+  HookRevision = 1;
+
+
+{* Static Hooks *}
+  Hook_Menu_Open                   = 'client.hw';
+  Hook_Local_Player                = 'p.ho';
+  Hook_Skill_Levels                = 'client.ht';
+  Hook_Skill_Exp                   = 'client.hu';
+  Hook_Camera_X                    = 'ca.fh';
+  Hook_Camera_Y                    = 'l.ft';
+  Hook_Camera_Z                    = 'fq.fb';
+  Hook_Camera_Yaw                  = 'dq.fw';
+  Hook_Camera_Pitch                = 'da.fx';
+  Hook_Base_X                      = 'd.cy';
+  Hook_Base_Y                      = 'r.cl';
+  Hook_Destination_X               = 'client.ma';
+  Hook_Destination_Y               = 'client.mq';
+  Hook_Item_Selected_Name          = 'client.it';
+  Hook_Item_IsSelected             = 'client.iq';
+  Hook_Player_Array                = 'client.ga';
+  Hook_Player_Array_Size           = 'client.gu';
+  Hook_Player_Array_Indices        = 'client.go';
+  Hook_NPC_Array                   = 'client.bs';
+  Hook_NPC_Array_Size              = 'client.ba';
+  Hook_NPC_Array_Indices           = 'client.bn';
+
+{* Actor *}
+  Hook_Actor_Class                 = 'as';
+  Hook_Actor_SpokenText            = 'am';
+  Hook_Actor_WalkingQueueX         = 'bs';
+  Hook_Actor_WalkingQueueY         = 'ba';
+  Hook_Actor_Animation             = 'ay';
+  Hook_Actor_Orientation           = 'bf';
+  Hook_Actor_Interacting           = 'az';
+  Hook_Actor_GridX                 = 'z';
+  Hook_Actor_GridY                 = 'v';
+
+{* Player *}
+  Hook_Player_Class                = 'd';
+  Hook_Player_Name                 = 'y';
+  Hook_Player_CombatLevel          = 'n';
+  Hook_Player_Def                  = 'm';
+
+{* Player Definition *}
+  Hook_PlayerDef_Class             = 'fx';
+  Hook_PlayerDef_Equipment         = 'l';
+
+{* NPC *}
+  Hook_NPC_Class                   = 'g';
+  Hook_NPC_Def                     = 'y';
+
+
+{* NPC Definition *}
+  Hook_NPCDef_Class                = 'av';
+  Hook_NPCDef_Name                 = 's';
+  Hook_NPCDef_ID                   = 'n';
+  Hook_NPCDef_Level                = 'h';
+  Hook_NPCDef_Actions              = 'v';
+
+
+{* Node *}
+  Hook_Node_Class                  = 'fk';
+  Hook_Node_UID                    = 'dz';
+  Hook_Node_Next                   = 'em';
+  Hook_Node_Prev                   = 'di';
+
+{* Stream *}
+  Hook_Stream_Class                = 'dp';
+
+{* Animable *}
+  Hook_Animable_Class              = 'cg';
+
+{* Cacheable Node *}
+  Hook_Cacheable_Node_Class        = 'fn';
+
+{* Multipliers *}
+  Multiplier_Player_Array_Size     = -830762073;
+  Multiplier_NPC_Array_Size        = -2108028599;
+
+  Multiplier_Camera_X              = 1600266873;
+  Multiplier_Camera_Y              = 1750131833;
+  Multiplier_Camera_Z              = -1357036389;
+  Multiplier_Camera_Yaw            = -1896216087;
+  Multiplier_Camera_Pitch          = 39432791;
+  Multiplier_Base_X                = 670470189;
+  Multiplier_Base_Y                = -1567957809;
+  Multiplier_Destination_X         = 1059776309;
+  Multiplier_Destination_Y         = 3915003207;
+
+  Multiplier_Actor_Animation       = -1297342091;
+  Multiplier_Actor_Orientation     = 1172788427;
+  Multiplier_Actor_Interacting     = -695887265;
+  Multiplier_Actor_GridX           = -344898115;
+  Multiplier_Actor_GridY           = -331795885;
+
+  Multiplier_Player_CombatLevel    = -74898749;
+  Multiplier_NPCDef_ID             = -1972562829;
+  Multiplier_NPCDef_Level          = 610526779;
+

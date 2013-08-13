@@ -1,0 +1,114 @@
+const
+  MOUSE_NIL   = -1;
+  //MOUSE_RIGHT = 0;
+  //MOUSE_LEFT  = 1;
+  MOUSE_MOVE  = 3;
+  MOUSE_WHEEL = 4;
+
+
+{* By: Benland100 *}
+procedure WindMouse(xs, ys, xe, ye, gravity, wind, minWait, maxWait, maxStep, targetArea: extended);
+var
+  veloX, veloY, windX, windY, veloMag, dist, randomDist, lastDist, step: extended;
+  lastX, lastY: integer;
+  sqrt2, sqrt3, sqrt5: extended;
+begin
+  try
+    sqrt2:= sqrt(2);
+    sqrt3:= sqrt(3);
+    sqrt5:= sqrt(5);
+    while hypot(xs - xe, ys - ye) > 1 do
+    begin
+      dist:= hypot(xs - xe, ys - ye);
+      wind:= minE(wind, dist);
+      if dist >= targetArea then
+      begin
+        windX:= windX / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
+        windY:= windY / sqrt3 + (random(round(wind) * 2 + 1) - wind) / sqrt5;
+      end else
+      begin
+        windX:= windX / sqrt2;
+        windY:= windY / sqrt2;
+        if (maxStep < 3) then
+        begin
+          maxStep:= random(3) + 3.0;
+        end else
+        begin
+          maxStep:= maxStep / sqrt5;
+        end;
+      end;
+      veloX:= veloX + windX;
+      veloY:= veloY + windY;
+      veloX:= veloX + gravity * (xe - xs) / dist;
+      veloY:= veloY + gravity * (ye - ys) / dist;
+      if hypot(veloX, veloY) > maxStep then
+      begin
+        randomDist:= maxStep / 2.0 + random(round(maxStep) div 2);
+        veloMag:= sqrt(veloX * veloX + veloY * veloY);
+        veloX:= (veloX / veloMag) * randomDist;
+        veloY:= (veloY / veloMag) * randomDist;
+      end;
+      lastX:= Round(xs);
+      lastY:= Round(ys);
+      xs:= xs + veloX;
+      ys:= ys + veloY;
+      if (lastX <> Round(xs)) or (lastY <> Round(ys)) then
+        MoveMouse(Round(xs), Round(ys));
+      step:= hypot(xs - lastX, ys - lastY);
+      wait(round((maxWait - minWait) * (step / maxStep) + minWait));
+      lastdist:= dist;
+    end;
+    if (Round(xe) <> Round(xs)) or (Round(ye) <> Round(ys)) then
+      MoveMouse(Round(xe), Round(ye));
+  except
+  end;
+end;
+
+Procedure ClickMouse(ClickType: Integer = Mouse_Left); overload;
+var
+  MX, MY: Integer;
+Begin
+  If (ClickType = Mouse_Move) then Exit;
+  GetMousePos(MX, MY);
+  HoldMouse(MX, MY, ClickType);
+  For 0 To 4 Do
+    Wait(20 + Random(30));
+  GetMousePos(MX, MY);
+  ReleaseMouse(MX, MY, ClickType);
+  Wait(50 + Random(50));
+End;
+
+{* By: Benland100; Modified by: Brandon *}
+Procedure Mouse(X, Y: Integer; RX, RY: integer = 0; ClickType: Integer = Mouse_Move);
+var
+  cx, cy : integer;
+  randSpeed: Extended;
+begin
+  GetMousePos(cx, cy);
+  randSpeed:= (random(15) / 2.0 + 15) / 10.0;
+  if randSpeed = 0.0 then
+    randSpeed := 0.1;
+  X := x + random(rx);
+  Y := y + random(ry);
+  WindMouse(cx, cy, x, y, 9.0, 3.0, 10.0 / randSpeed, 15.0 / randSpeed, 10.0 * randSpeed, 10.0 * randSpeed);
+  If (ClickType <> Mouse_Move) then
+  begin
+    Wait(60 + Random(30));
+    ClickMouse(ClickType);
+  end;
+end;
+
+Procedure Mouse(P: TPoint; RX, RY: Integer = 0; ClickType: Integer = Mouse_Move); overload;
+Begin
+  Mouse(P.X, P.Y, RX, RY, ClickType);
+End;
+
+Procedure MouseBox(Box: TBox; ClickType: Integer = Mouse_Move);
+Begin
+  Mouse(MiddleBox(Box).X, MiddleBox(Box).Y, 3, 3, ClickType);
+End;
+
+{Procedure MouseBox(X1, Y1, X2, Y2: Integer); overload;
+Begin
+  MoveMouse(X1, Y1);
+End;}

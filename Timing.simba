@@ -1,0 +1,74 @@
+{$include_once GLX/Text.Simba}
+
+type Timer = record
+  Time: Int64;
+end;
+
+Procedure Timer.Start;
+Begin
+  Time := GetSystemTime;
+End;
+
+Procedure Timer.Reset;
+Begin
+  Time := 0;
+End;
+
+Function Timer.TimeElapsed: Integer;
+Begin
+  Result := GetSystemTime - Time;
+End;
+
+Function GL_WaitOption(Options: TStringArray; Action: Integer; Time: Integer): Boolean;
+var
+  T: Timer;
+begin
+  T.Start;
+  Result := False;
+  While (T.TimeElapsed < Time) Do
+  Begin
+    If (GL_ChooseOption(Options, Action)) Then
+    Begin
+      Result := True;
+      Exit;
+    End;
+    Wait(20 + Random(10));
+  End;
+End;
+
+Function GL_WaitOption(Options: TStringArray; Time: Integer): Boolean; overload;
+Begin
+  Result := GL_WaitOption(Options, MOUSE_LEFT, Time);
+End;
+
+Function GL_WaitOption(Option: String; Action: Integer; Time: Integer): Boolean; overload;
+Begin
+  Result := GL_WaitOption([Option], Action, Time);
+End;
+
+Function GL_WaitOption(Option: String; Time: Integer): Boolean; overload;
+Begin
+  Result := GL_WaitOption([Option], MOUSE_LEFT, Time);
+End;
+
+Function GL_WaitMouseUptext(Options: TStringArray; Time: Integer): Boolean;
+var
+  T: Timer;
+Begin
+  T.Start;
+  Result := False;
+  While (T.TimeElapsed < Time) Do
+  Begin
+    If (GL_IsMouseUpText(Options)) Then
+    Begin
+      Result := True;
+      Exit;
+    End;
+    Wait(20 + Random(20));
+  End;
+End;
+
+Function GL_WaitMouseUptext(Option: String; Time: Integer): Boolean; overload;
+Begin
+  Result := GL_WaitMouseUptext([Option], Time);
+End;
