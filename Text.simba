@@ -1,37 +1,5 @@
 {$include_once GLX/GLXCore.Simba}
 
-const
-  VK_ENTER = 13;
-
-Procedure TypeByte(B: Byte);
-Begin
-  {$IFDEF SMART}
-  If (B = 13) then
-    B:= 10;
-  {$ENDIF}
-  KeyDown(B);
-  Wait(10 + Random(50));
-  KeyUp(B);
-End;
-
-Procedure TypeSend(Text: String; Send: Boolean = True);
-var
-  I: Integer;
-Begin
-  For I := 1 to Length(Text) do
-  Begin
-    {$IFDEF SIMBAMAJOR980}
-    SendKeys(Text[i], 40 + Random(40));
-    {$ELSE}
-    SendKeys(Text[i], 30 + Random(30), 30 + Random(30));
-    {$ENDIF}
-    Wait(20 + Random(40));
-  End;
-
-  If (Send) Then
-    TypeByte(VK_ENTER);
-End;
-
 Function GL_MouseHoverBounds: TBox;
 var
   UL, BR: glTextureArray;
@@ -39,7 +7,7 @@ Begin
   UL := glGetTextures(8814);
   BR := glGetTextures(8936);
   If (Length(UL) > 0 and Length(BR) > 0) then
-    Result := glTextureBounds(UL[0], BR[1]);
+    Result := IntToBox(UL[0].Bounds.X1, UL[0].Bounds.Y1, BR[1].Bounds.X2, BR[1].Bounds.Y2);
 End;
 
 Function GL_GetMouseUpText: TStringArray;

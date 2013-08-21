@@ -1,5 +1,6 @@
 {$include_once GLX/GLXCore.Simba}
 {$include_once GLX/Cache.Simba}
+{$include_once GLX/Misc/Graphics.Simba}
 
 type FloatPoint = record
   X, Y: Single;
@@ -44,6 +45,36 @@ Begin
   Result := Target - Angle + PI * 2;
 End;
 
+Procedure glEulerAngles(var X, Y, Z: Double; ModelView: array [0..15] of single; RowMajor: Boolean);
+begin
+  if (RowMajor) then
+  begin
+    X := FixRad(ArcTan2(ModelView[6], ModelView[10]));
+    Y := FixRad(ArcTan2(-ModelView[8], sqrt(pow(ModelView[0], 2) + pow(ModelView[1], 2))));
+    Z := FixRad(ArcTan2(ModelView[1], ModelView[0]));
+  end else
+  begin
+    X := FixRad(ArcTan2(ModelView[9], ModelView[10]));
+    Y := FixRad(ArcTan2(-ModelView[8], sqrt(pow(ModelView[0], 2) + pow(ModelView[4], 2))));
+    Z := FixRad(ArcTan2(ModelView[4], ModelView[0]));
+  end;
+end;
+
+Procedure glCameraPos(var X, Y, Z: Double; ModelView: array [0..15] of Single; RowMajor: Boolean);
+begin
+  if (RowMajor) then
+  begin
+    X := ModelView[12];
+    Y := ModelView[13];
+    Z := ModelView[14];
+  end else
+    begin
+      X := ModelView[3];
+      Y := ModelView[7];
+      Z := ModelView[11];
+    end;
+end;
+
 Function GL_GetMinimapBounds: TBox;
 var
   I: Integer;
@@ -60,7 +91,7 @@ Begin
   End;
 
   Background := glGetTextures(3786240);
-  Corners := glGetTextures(386460);
+  Corners := glGetTextures(386611);
   If (Length(Background) < 1) or (Length(Corners) < 1) Then Exit;
 
   For I := 0 To High(Background) Do
@@ -107,6 +138,48 @@ Begin
   Result.Y := Round(((PPY * TVX) - (PPX * TVY)) * 512.0 / PPZ);
 End;
 
+Function GL_CompassDeg: Integer;
+var
+  X, Y, Z: Double;
+begin
+  glEulerAngles(X, Y, Z, GLXMatrices^, True);
+  Result := Round(Degrees(Z));
+end;
+
+Function GL_CompassRad: Integer;
+var
+  X, Y, Z: Double;
+begin
+  glEulerAngles(X, Y, Z, GLXMatrices^, True);
+  Result := Round(Z);
+end;
+
+Procedure GL_CompassAngle(var DA, RA: Integer);
+var
+  TL, BL, BR, TR: FloatPoint;
+Begin
+  If (Not GL_LoggedIn) Then Exit;
+  GL_GetMapCoords(TL, BL, BR, TR);
+  RA := Round(FixRad(ArcTan2(TR.Y - TL.Y, TR.X - TL.X)));
+  DA := Round(FixD(Degrees(RA)));
+End;
+
+Function GL_CompassHeightDeg: Integer;
+var
+  X, Y, Z: Double;
+begin
+  glEulerAngles(X, Y, Z, GLXMatrices^, True);
+  Result := Round(Degrees(X));
+end;
+
+Function GL_CompassHeightRad: Integer;
+var
+  X, Y, Z: Double;
+begin
+  glEulerAngles(X, Y, Z, GLXMatrices^, True);
+  Result := Round(X);
+end;
+
 Function GL_MakeCompass(Angle: Single; Tolerance: Integer = 5): Boolean;
 var
   T: Timer;
@@ -114,7 +187,7 @@ var
   AngleDistance: Single;
   CurrentAngle, RA: Integer;
 Begin
-  GL_OldCompass(CurrentAngle, RA);
+  GL_CompassAngle(CurrentAngle, RA);
   If ((CurrentAngle < 0) or (Not GL_LoggedIn)) Then
     Exit;
 
@@ -130,7 +203,7 @@ Begin
     Else
       KeyDown(VK_RIGHT);
 
-    GL_OldCompass(CurrentAngle, RA);
+    GL_CompassAngle(CurrentAngle, RA);
     Result := Abs(ShortestArcDeg(CurrentAngle, Angle)) <= Tolerance;
     If (Result) Then
     Begin
@@ -156,7 +229,7 @@ var
   Up: Boolean;
   CurrentHeight: Integer;
 Begin
-  CurrentHeight := GLXCompassHeightDeg;
+  CurrentHeight := GL_CompassHeightDeg;
   If ((CurrentHeight < 0) or (Not GL_LoggedIn)) Then
     Exit;
 
@@ -171,7 +244,7 @@ Begin
     Else
       KeyDown(VK_DOWN);
 
-    CurrentHeight := GLXCompassHeightDeg;
+    CurrentHeight := GL_CompassHeightDeg;
     Result := abs(CurrentHeight - Height) <= Tolerance;
     If (Result) Then
     Begin
@@ -190,3 +263,20 @@ Begin
     KeyUp(VK_DOWN);
   Result := Abs(CurrentHeight - Height) <= Tolerance;
 End;
+
+Function GL_MapToImage: Integer;
+var
+  Ptr: Pointer;
+  Chunk: Integer = 52;
+  Width, Height, Offset: Integer;
+  X, Y: Array[0..3] of Single;
+  Bmp: TGraphics;
+begin
+  Width := 512;
+  Height := 512;
+  Offset := Width * Chunk * (sizeof(byte) * 4) + (Chunk * (sizeof(byte) * 4));
+  Bmp.Create(Width, Height - (2 * Chunk), UInt32(GLXMap(Width, Height, X, Y) + Offset));
+  Result := CreateMirroredBitmapEx(Bmp.__Bmp.GetIndex, MirrorHeight);
+  SetBitmapSize(Result, 512 - (2 * Chunk), 512 - (2 * Chunk));
+  Bmp.Free();
+end;

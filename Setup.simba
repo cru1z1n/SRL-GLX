@@ -1,0 +1,26 @@
+{$include_once GLX/GLXCore.Simba}
+{$include_once GLX/Misc/Graphics.Simba}
+{$include_once GLX/Mouse.Simba}
+{$include_once GLX/Login.Simba}
+{$include_once GLX/Text.Simba}
+{$include_once GLX/Bank.Simba}
+{$include_once GLX/Inventory.Simba}
+{$include_once GLX/Timing.Simba}
+{$include_once GLX/Cache.Simba}
+{$include_once GLX/Minimap.Simba}
+{$ifdef SMART}
+{$include_once GLX/Misc/Smart.Simba}
+{$else}
+  {$ifdef SMARTOLD}
+  {$include_once GLX/Misc/Smart8API.Simba}
+  {$endif}
+{$endif}
+
+Procedure SetupGLX(var Smart: TSmart; W, H: Integer);
+Begin
+  Smart.Create(W, H, '', ['OpenGL32.dll']);
+  GLXMapHooks(Smart.ID);
+  Smart.Graphics().Clear;
+  glDebug(GL_MODE_NONE, 0, 0, 0, Smart.Width, Smart.Height);
+  GLXSetColourCapture(False);
+End;

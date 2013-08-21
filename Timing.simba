@@ -1,24 +1,5 @@
 {$include_once GLX/Text.Simba}
 
-type Timer = record
-  Time: Int64;
-end;
-
-Procedure Timer.Start;
-Begin
-  Time := GetSystemTime;
-End;
-
-Procedure Timer.Reset;
-Begin
-  Time := 0;
-End;
-
-Function Timer.TimeElapsed: Integer;
-Begin
-  Result := GetSystemTime - Time;
-End;
-
 Function GL_WaitOption(Options: TStringArray; Action: Integer; Time: Integer): Boolean;
 var
   T: Timer;
@@ -72,3 +53,19 @@ Function GL_WaitMouseUptext(Option: String; Time: Integer): Boolean; overload;
 Begin
   Result := GL_WaitMouseUptext([Option], Time);
 End;
+
+function WaitFunc(Func: function: boolean; WaitPerLoop, MaxTime: Integer): Boolean;
+var
+  T: Integer;
+begin
+  T := GetSystemTime + MaxTime;
+  while (GetSystemTime < T) do
+  begin
+    if Func then
+    begin
+      Result := True;
+      Exit;
+    end;
+    Wait(WaitPerLoop);
+  end;
+end;

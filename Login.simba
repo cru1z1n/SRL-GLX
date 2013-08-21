@@ -1,15 +1,22 @@
 {$include_once GLX/Mouse.Simba}
 
 const
-  GLI_Compass         = 192278;
-  GLIC_Compass        = 2893598;
+  GLI_ChatBubble      = 24990;
   GLI_LobbyTab        = 564570;
   GLI_RSLogo          = 2021324;
   GLI_LobbyExit       = 9369;
 
+type TPlayer = record
+  Name: String;
+  NickName: String;
+  Pass: String;
+  Pin: String;
+  World: TIntegerArray;
+end;
+
 Function GL_LoggedIn: Boolean;
 Begin
-  Result := (Length(glGetTextures(GLI_Compass, GLIC_Compass, 5)) > 0);
+  Result := (Length(glGetTextures(GLI_ChatBubble)) > 0);
 End;
 
 Function GL_LobbyScreen: Boolean;
@@ -116,4 +123,33 @@ Begin
       Break;
   Until(False);
   Result := True;
+End;
+
+Function GL_LoginPlayer(Player: TPlayer): Boolean;
+var
+  L: Integer;
+  T: Timer;
+  PlayButton: glTextureArray;
+Begin
+  If (Not GL_LoggedIn) Then
+    If (GL_LoginToLobby(Player)) Then
+    Begin
+      PlayButton := glGetTextures(95625, 12029477, 10);
+      L := Length(PlayButton);
+      If (L > 0) Then
+      Begin
+        MouseBox(PlayButton[RandomRange(0, L - 1)].Bounds, MOUSE_LEFT);
+        T.Start;
+        While (T.TimeElapsed < 10000) Do
+        Begin
+          Wait(500);
+          If (GL_LoggedIn) Then
+          Begin
+            Result := True;
+            Exit;
+          End;
+        End;
+        T.Reset;
+      End;
+    End;
 End;

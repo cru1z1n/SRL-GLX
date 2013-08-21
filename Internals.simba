@@ -1,7 +1,58 @@
+const
+  VK_ENTER = 13;
+
 var
   OnTerminateProcs: TStringArray;
 
 type TCardinalArray = array of Cardinal;
+
+type Timer = record
+  Time: Int64;
+end;
+
+Procedure Timer.Start;
+Begin
+  Time := GetSystemTime;
+End;
+
+Procedure Timer.Reset;
+Begin
+  Time := 0;
+End;
+
+Function Timer.TimeElapsed: Integer;
+Begin
+  Result := GetSystemTime - Time;
+End;
+
+Procedure TypeByte(B: Byte);
+Begin
+  {$IFDEF SMART}
+  If (B = 13) then
+    B:= 10;
+  {$ENDIF}
+  KeyDown(B);
+  Wait(10 + Random(50));
+  KeyUp(B);
+End;
+
+Procedure TypeSend(Text: String; Send: Boolean = True);
+var
+  I: Integer;
+Begin
+  For I := 1 to Length(Text) do
+  Begin
+    {$IFDEF SIMBAMAJOR980}
+    SendKeys(Text[i], 40 + Random(40));
+    {$ELSE}
+    SendKeys(Text[i], 30 + Random(30), 30 + Random(30));
+    {$ENDIF}
+    Wait(20 + Random(40));
+  End;
+
+  If (Send) Then
+    TypeByte(VK_ENTER);
+End;
 
 Procedure Delete(Ptr: Pointer; var Pointers: Array of Pointer); overload;
 var
