@@ -1,4 +1,5 @@
 {$include_once GLX/GLXCore.Simba}
+{$include_once GLX/Cache.Simba}
 
 Function GL_MouseHoverBounds: TBox;
 var
@@ -6,15 +7,40 @@ var
 Begin
   UL := glGetTextures(8814);
   BR := glGetTextures(8936);
-  If (Length(UL) > 0 and Length(BR) > 0) then
-    Result := IntToBox(UL[0].Bounds.X1, UL[0].Bounds.Y1, BR[1].Bounds.X2, BR[1].Bounds.Y2);
+  If ((Length(UL) > 0) and (Length(BR) > 0)) then
+    Result := IntToBox(UL[0].Bounds.X1, UL[0].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2);
+End;
+
+Function GL_InterfaceUpTextBounds: TBox;
+var
+  UL, BR: glTextureArray;
+Begin
+  UL := glGetTextures(8814);
+  BR := glGetTextures(8936);
+  If ((Length(UL) >= 2) and (Length(BR) >= 2)) then
+    Result := IntToBox(UL[High(UL)].Bounds.X1, UL[High(UL)].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2);
+End;
+
+Function GL_UptextBounds: TBox;
+var
+  UL, BR: glTextureArray;
+Begin
+  UL := glGetTextures(8814);
+  BR := glGetTextures(8936);
+  If ((Length(UL) >= 2) and (Length(BR) >= 2)) Then
+  Begin
+    If (UL[0].X < UL[High(UL)].X) Then
+      Result := IntToBox(UL[0].Bounds.X1, UL[0].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2)
+    Else
+      Result := IntToBox(UL[High(UL)].Bounds.X1, UL[High(UL)].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2)
+  End;
 End;
 
 Function GL_GetMouseUpText: TStringArray;
 var
   glChars: glCharArray;
 Begin
-  glChars := glGetChars(GL_MouseHoverBounds);
+  glChars := glGetChars(GL_UptextBounds);
   If (Length(glChars) > 0) then
     Result := glCharsToText(glChars, 5, 5);
 End;
@@ -39,12 +65,21 @@ Begin
     End;
 End;
 
-Function GL_GetChatBoxBounds: TBox;
+Function GL_ChatBounds: TBox;
 var
   I, J: Integer;
   S, T: glTextureArray;
 Begin
   If (Not GL_LoggedIn) Then Exit;
+  If (UseSysCache) Then
+  Begin
+    I := SysCache.Contains(CACHE_CHAT);
+    if (I <> -1) Then
+    Begin
+      Result := SysCache[I].Area;
+      Exit;
+    End;
+  End;
 
   T := glGetTextures(3786240); //Chatbox texture.
   S := glGetTextures(24990);   //ChatBubble.
@@ -54,6 +89,8 @@ Begin
         If (PointInBox(Point(S[J].X, S[J].Y), T[I].Bounds)) then
         begin
           Result := T[I].Bounds;
+          If (UseSysCache) Then
+            SysCache.CacheChat(Result);
           Exit;
         end;
 End;
@@ -66,7 +103,7 @@ var
   Text: glTextArray;
   Options: glTextureArray;
 Begin
-  B := GL_GetChatBoxBounds;
+  B := GL_ChatBounds;
   Options := glGetTextures(52107, B);
   Insert(glGetTextures(52825, B), Options);
   If (Length(Options) < 2) Then Exit;

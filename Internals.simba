@@ -70,33 +70,43 @@ begin
   Pointers := Ptrs;
 end;
 
-Function TIntegerArray.Contains(Value: Integer): Boolean;
+Function TIntegerArray.IndexOf(Value: Integer): Integer;
 var
   I: Integer;
 Begin
   For I := 0 To High(Self) Do
     if (Self[I] = Value) then
     begin
-      Result := True;
+      Result := I;
       Exit;
     end;
-  Result := False;
+  Result := -1;
+End;
+
+Function TIntegerArray.Contains(Value: Integer): Boolean;
+Begin
+  Result := Self.IndexOf(Value) <> -1;
+End;
+
+Function TCardinalArray.IndexOf(Value: Cardinal): Integer;
+var
+  I: Integer;
+Begin
+  For I := 0 To High(Self) Do
+    if (Self[I] = Value) then
+    begin
+      Result := I;
+      Exit;
+    end;
+  Result := -1;
 End;
 
 Function TCardinalArray.Contains(Value: Cardinal): Boolean;
-var
-  I: Integer;
 Begin
-  For I := 0 To High(Self) Do
-    if (Self[I] = Value) then
-    begin
-      Result := True;
-      Exit;
-    end;
-  Result := False;
+  Result := Self.IndexOf(Value) <> -1;
 End;
 
-Function TStringArray.Contains(Value: String; CaseSensitive: Boolean = True): Boolean;
+Function TStringArray.IndexOf(Value: String; CaseSensitive: Boolean = True): Boolean;
 var
   I: Integer;
 Begin
@@ -108,16 +118,39 @@ Begin
     begin
       if (LowerCase(Self[I]) = Value) then
       begin
-        Result := True;
+        Result := I;
         Exit;
       end;
     end else
       if (Self[I] = Value) then
       begin
-        Result := True;
+        Result := I;
         Exit;
       end;
-  Result := False;
+  Result := -1;
+End;
+
+Function TStringArray.Contains(Value: String; CaseSensitive: Boolean = True): Boolean;
+Begin
+  Result := Self.IndexOf(Value, CaseSensitive) <> -1;
+End;
+
+Function TBoxArray.Bounds: TBox;
+var
+  I, J: Integer;
+  TPA: TPointArray;
+Begin
+  SetLength(TPA, Length(Self) * 4);
+
+  For I := 0 To High(Self) Do
+  Begin
+    TPA[J] := Point(Self[I].X1, Self[I].Y1);
+    TPA[J + 1] := Point(Self[I].X1, Self[I].Y2);
+    TPA[J + 2] := Point(Self[I].X2, Self[I].Y2);
+    TPA[J + 3] := Point(Self[I].X2, Self[I].Y1);
+    J := J + 4;
+  End;
+  Result := GetTPABounds(TPA);
 End;
 
 procedure TerminateScript; override;
@@ -151,3 +184,66 @@ begin
   For I := 0 To High(OnTerminateProcs) Do
     AddOnTerminate(Procs[I]);
 end;
+
+Function GetDirectoryName(Directory, Path: String): String;
+var
+  I: Integer;
+  Directories: TStringArray;
+Begin
+  Directories := GetDirectories(Path);
+  For I := 0 To High(Directories) Do
+    If ExecRegExpr(Directory, Directories[I]) Then
+    Begin
+      Result := Directories[I];
+      Exit;
+    End;
+End;
+
+Function FindDirectory(Directory, Path: String): Boolean;
+Begin
+  Result := Length(GetDirectoryName(Directory, Path)) > 0;
+End;
+
+Function GetJavaPath(Console: Boolean): String;
+var
+  Drive: String;
+  CurrentPath: String;
+Begin
+  Drive := Copy(PluginPath, 0, 3);
+
+  If (FindDirectory('Program\sFiles\s\(x86\)', Drive)) Then
+  Begin
+    CurrentPath := Drive + 'Program Files (x86)\';
+  End Else
+    CurrentPath := Drive + 'Program Files\';
+
+  If (FindDirectory('Java|java', CurrentPath + '\')) Then
+  Begin
+    CurrentPath := CurrentPath + 'Java\';
+  End Else
+    Begin
+      Writeln('Failed To Find Path: ' + CurrentPath + 'Java\');
+      Exit;
+    End;
+
+  Drive := GetDirectoryName('jre', CurrentPath);
+  If (Length(Drive) > 0) Then
+  Begin
+    If (Console) Then
+      CurrentPath := CurrentPath + Drive + '\bin\java.exe'
+    Else
+      CurrentPath := CurrentPath + Drive + '\bin\javaw.exe';
+  End Else
+    Begin
+      Drive := GetDirectoryName('jdk', CurrentPath);
+      If (Console) Then
+      CurrentPath := CurrentPath + Drive + 'jre\bin\java.exe'
+    Else
+      CurrentPath := CurrentPath + Drive + 'jre\bin\javaw.exe';
+    End;
+
+  If (FileExists(CurrentPath)) Then
+    Result := CurrentPath
+  Else
+    writeln('Failed To Find Java.exe or Javaw.exe. Please add ...\JRE\Bin to your PATH environment variable.');
+End;

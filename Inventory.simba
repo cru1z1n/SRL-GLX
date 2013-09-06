@@ -3,9 +3,10 @@
 {$include_once GLX/Cache.Simba}
 
 Function GL_InvBounds: TBox;
+Label Skip;
 var
-  I: Integer;
-  Background, Slots: glTextureArray;
+  I, J: Integer;
+  Background, Others: glTextureArray;
 Begin
   If (UseSysCache) Then
   Begin
@@ -17,23 +18,26 @@ Begin
     End;
   End;
 
+  Result := IntToBox(-1, -1, -1, -1);
   Background := glGetTextures(3786240);
-  Slots := glGetTextures(88625);
-
-  if (Length(Background) < 1) or (Length(Slots) < 1) Then
+  Others := glGetTextures([24990, 386611]);    //ChatBubble, MMCorners
+  if (Length(Background) < 1) or (Length(Others) < 1) Then
     Exit;
 
   For I := 0 To High(Background) Do
-    If (PointInBox(Point(Slots[0].X, Slots[0].Y), Background[I].Bounds)) then
-    begin
-      Result.X1 := Slots[0].Bounds.X1;
-      Result.Y1 := Slots[0].Bounds.Y1;
-      Result.X2 := BackGround[I].Bounds.X2;
-      Result.Y2 := BackGround[I].Bounds.Y2;
-      If (UseSysCache) Then
+  Begin
+    For J := 0 To High(Others) Do
+    Begin
+      If (PointInBox(Point(Others[J].X, Others[J].Y), Background[I].Bounds)) Then
+        Goto Skip;
+    End;
+
+    Result := Background[I].Bounds;
+    If (UseSysCache) Then
         SysCache.CacheInventory(Result);
-      Exit;
-    end;
+    Exit;
+    Skip:
+  End;
 End;
 
 Function GL_CountInvSlots: Integer;
@@ -65,17 +69,72 @@ Begin
 End;
 
 Function GL_InvCount: Integer;
+  Function glGetTexturesEx(Area: TBox; IDs: TIntegerArray): glTextureArray;
+  var
+    Size, I, J: Cardinal;
+    Ptr: Pointer;
+  Begin
+    J := 0;
+    Result := [];
+    Ptr := GLXTextures(Size);
+    SetLength(Result, Size);
+
+    For I := 0 To Size - 1 Do
+    Begin
+      If (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area) And (Not IDs.Contains(Integer(Ptr^)))) Then
+      Begin
+        Result[J] := glTexture(Ptr^);
+        Inc(J);
+      End;
+      Ptr.Inc(sizeof(glTexture));
+    End;
+    SetLength(Result, J);
+  End;
+var
+  I: Integer;
+  BA: TBoxArray;
+  BS, Found: Boolean;
+  T: glTextureArray;
 Begin
-  If (Length(glGetTextures(GL_InvBounds)) < 1) Then
-    Result := 0
-  Else If (GL_BankScreen) Then
-    Result := Length(glGetTextures(GL_InvBounds)) - 46
-  Else
-    Result := Length(glGetTextures(GL_InvBounds)) - 36;
-  If (Result < 0) Then Result := 0;
+  Result := 0;
+  BS := GL_BankScreen;
+
+  If (Not GL_LoggedIn) Then
+    Exit;
+
+  If (Not GL_BankScreen) Then
+  Begin
+    BA := GL_InvSlots;
+    If (Length(BA) > 0) Then
+      Result := (Length(glGetTexturesEx(BA.Bounds, [3786240, 88625, 73440, 58472, 65081, 28550, 24480])) - 2);
+  End Else
+    Begin
+      T := glGetTexturesEx(GL_BankInvBounds, [57120, 20400, 46967]);
+      For I := 0 To High(T) Do
+      Begin
+        If (T[I].ID = 3786240) Then
+          Found := True;
+
+        If (Found) Then
+        Begin
+          Result := High(T) - I;
+          Break;
+        End;
+      End;
+    End;
 End;
 
 Function GL_InvFull: Boolean;
 Begin
   Result := GL_InvCount >= 28;
+End;
+
+Function GL_CountItem(ID: Integer): Integer;
+Begin
+  Result := Length(glGetTextures(ID, GL_InvBounds));
+End;
+
+Function GL_HasItem(ID: Integer): Boolean;
+Begin
+  Result := GL_CountItem(ID) <> 0;
 End;

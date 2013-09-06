@@ -108,7 +108,17 @@ Begin
   Mouse(MiddleBox(Box).X, MiddleBox(Box).Y, 3, 3, ClickType);
 End;
 
-{Procedure MouseBox(X1, Y1, X2, Y2: Integer); overload;
+Procedure MouseBox(X1, Y1, X2, Y2: Integer; ClickType: Integer = Mouse_Move); overload;
 Begin
-  MoveMouse(X1, Y1);
-End;}
+  MouseBox(IntToBox(X1, Y1, X2, Y2), ClickType);
+End;
+
+Function DidYellowClick: Boolean;
+Begin
+  Result := (Length(glGetTextures([7878, 8022, 2528], [3292420, 3292420, 592641], [10, 10, 10])) > 0);
+End;
+
+Function DidRedClick: Boolean;
+Begin
+  Result := (Length(glGetTextures([8814, 8936, 3970, 4250, 3825], [3158064, 3026478, 1250068, 1250068, 1118482], [10, 10, 10, 10, 10])) > 0);
+End;

@@ -1,5 +1,11 @@
 {$include_once GLXCore.Simba}
+{$include_once Cache.Simba}
+{$include_once Internals.Simba}
 {$include_once Mouse.Simba}
+{$include_once Text.Simba}
+{$include_once Minimap.Simba}
+
+Function GL_InvBounds: TBox; Forward;
 
 Function GL_PinScreen: Boolean;
 Begin
@@ -8,23 +14,18 @@ End;
 
 Function GL_BankScreen: Boolean;
 var
-  I, J: Integer;
+  B: TBox;
+  I: Integer;
   T: glTextureArray;
   Text: glTextArray;
 Begin
-  T := glGetTextures(2322540);
+  T := glGetTextures(714000);
   If (Length(T) < 1) or GL_PinScreen Then Exit;
-
-  For I := 0 To High(T) Do
-  Begin
-    Text := glCharsToTexts(glGetChars(T[I].Bounds), 4, 5);
-    For J := 0 To High(Text) Do
-      If (Pos('Bank of RuneScape', Text[I].Text) > 0) then
-      begin
-        Result := True;
-        Exit;
-      end;
-  End;
+  B := IntToBox(T[0].Bounds.X1, T[0].Bounds.Y1, T[High(T)].Bounds.X2, T[High(T)].Bounds.Y2);
+  Text := glCharsToTexts(glGetChars(B), 4, 5);
+  For I := 0 To High(Text) Do
+    If ExecRegExpr('Bank\sof\sRunescape', Text[I].Text) Then
+      Result := True;
 End;
 
 Function GL_CloseBank: Boolean;
@@ -90,4 +91,118 @@ Begin
     Wait(RandomRange(50, 75));
   End;
   Result := Not GL_PinScreen;
+End;
+
+Function GL_BankBounds: TBox;
+var
+  I: Integer;
+  BA: TBoxArray;
+  T: glTextureArray;
+Begin
+  If (UseSysCache) Then
+  Begin
+    I := SysCache.Contains(CACHE_BANK);
+    if (I <> -1) Then
+    Begin
+      Result := SysCache[I].Area;
+      Exit;
+    End;
+  End;
+
+  T := glGetTextures([714000, 88773]);
+  SetLength(BA, Length(T));
+  For I := 0 To High(T) Do
+    BA[I] := T[I].Bounds;
+
+  Result := BA.Bounds;
+  T := glGetTextures(3786240, Result);
+  If (Length(T) > 0) Then
+    Result := T[0].Bounds;
+
+  If (UseSysCache) Then
+    SysCache.CacheBank(Result);
+End;
+
+Function GL_BankInvBounds: TBox;
+Label Skip;
+var
+  I, J: Integer;
+  BA: TBoxArray;
+  Background: glTextureArray;
+Begin
+  If (UseSysCache) Then
+  Begin
+    I := SysCache.Contains(CACHE_BANK_INV);
+    if (I <> -1) Then
+    Begin
+      Result := SysCache[I].Area;
+      Exit;
+    End;
+  End;
+
+  Result := IntToBox(-1, -1, -1, -1);
+  If (Not GL_BankScreen) Then Exit;
+  SetLength(BA, 4);
+  BA[0] := GL_MMBounds;
+  BA[1] := GL_InvBounds;
+  BA[2] := GL_ChatBounds;
+  BA[3] := GL_BankBounds;
+
+  Background := glGetTextures(3786240);
+
+  For I := 0 To High(Background) Do
+  Begin
+    For J := 0 To High(BA) Do
+    Begin
+      If (PointInBox(MiddleBox(BA[J]), Background[I].Bounds)) Then
+        Goto Skip;
+    End;
+
+    Result := Background[I].Bounds;
+    If (UseSysCache) Then
+        SysCache.CacheBankInv(Result);
+    Exit;
+    Skip:
+  End;
+End;
+
+Function CountBankInv(G: TGraphics): Integer;
+  Function glGetTexturesEx(Area: TBox; IDs: TIntegerArray): glTextureArray;
+    var
+      Size, I, J: Cardinal;
+      Ptr: Pointer;
+    Begin
+      J := 0;
+      Result := [];
+      Ptr := GLXTextures(Size);
+      SetLength(Result, Size);
+
+      For I := 0 To Size - 1 Do
+      Begin
+        If (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area) And (Not IDs.Contains(Integer(Ptr^)))) Then
+        Begin
+          Result[J] := glTexture(Ptr^);
+          Inc(J);
+        End;
+        Ptr.Inc(sizeof(glTexture));
+      End;
+      SetLength(Result, J);
+    End;
+var
+  I: Integer;
+  Found: Boolean;
+  T: glTextureArray;
+Begin
+  T := glGetTexturesEx(GL_BankInvBounds, [57120, 20400, 46967]);
+  For I := 0 To High(T) Do
+  Begin
+    If (T[I].ID = 3786240) Then
+      Found := True;
+
+    If (Found) Then
+    Begin
+      Result := High(T) - I;
+      Exit;
+    End;
+  End;
 End;

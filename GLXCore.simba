@@ -52,6 +52,16 @@ Begin
   Self := Self + Size;
 End;
 
+Function glTexture.Width: Integer;
+Begin
+  Result := Self.Bounds.X2 - Self.Bounds.X1;
+End;
+
+Function glTexture.Height: Integer;
+Begin
+  Result := Self.Bounds.Y2 - Self.Bounds.Y1;
+End;
+
 Function glTextureBounds(var A, B: glTexture): TBox;
 Begin
   Result := IntToBox(A.Bounds.X1, A.Bounds.Y1, B.Bounds.X2, B.Bounds.Y2);

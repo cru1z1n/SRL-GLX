@@ -54,7 +54,7 @@ Begin
   Result := GL_WaitMouseUptext([Option], Time);
 End;
 
-function WaitFunc(Func: function: boolean; WaitPerLoop, MaxTime: Integer): Boolean;
+function GL_WaitFunc(Func: function: boolean; WaitPerLoop, MaxTime: Integer): Boolean;
 var
   T: Integer;
 begin
@@ -62,6 +62,38 @@ begin
   while (GetSystemTime < T) do
   begin
     if Func then
+    begin
+      Result := True;
+      Exit;
+    end;
+    Wait(WaitPerLoop);
+  end;
+end;
+
+function GL_WaitFindModel(ID: Cardinal; WaitPerLoop, MaxTime: Integer): Boolean;
+var
+  T: Integer;
+begin
+  T := GetSystemTime + MaxTime;
+  while (GetSystemTime < T) do
+  begin
+    if (Length(glGetModels(ID)) < 1) then
+    begin
+      Result := True;
+      Exit;
+    end;
+    Wait(WaitPerLoop);
+  end;
+end;
+
+function GL_WaitFindTexture(ID: Integer; WaitPerLoop, MaxTime: Integer): Boolean;
+var
+  T: Integer;
+begin
+  T := GetSystemTime + MaxTime;
+  while (GetSystemTime < T) do
+  begin
+    if (Length(glGetTextures(ID)) < 1) then
     begin
       Result := True;
       Exit;

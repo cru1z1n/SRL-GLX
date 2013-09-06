@@ -75,7 +75,7 @@ begin
     end;
 end;
 
-Function GL_GetMinimapBounds: TBox;
+Function GL_MMBounds: TBox;
 var
   I: Integer;
   Background, Corners: glTextureArray;
@@ -125,7 +125,7 @@ var
 Begin
   If (Not GL_LoggedIn) Then Exit;
   GL_GetMapCoords(TL, BL, BR, TR);
-  Player := MiddleBox(GL_GetMinimapBounds);
+  Player := MiddleBox(GL_MMBounds);
 
   TVX := TR.X - TL.X;
   TVY := TR.Y - TL.Y;
@@ -138,7 +138,7 @@ Begin
   Result.Y := Round(((PPY * TVX) - (PPX * TVY)) * 512.0 / PPZ);
 End;
 
-Function GL_CompassDeg: Integer;
+{Function GL_CompassDeg: Integer;
 var
   X, Y, Z: Double;
 begin
@@ -152,7 +152,7 @@ var
 begin
   glEulerAngles(X, Y, Z, GLXMatrices^, True);
   Result := Round(Z);
-end;
+end;}
 
 Procedure GL_CompassAngle(var DA, RA: Integer);
 var
@@ -164,7 +164,7 @@ Begin
   DA := Round(FixD(Degrees(RA)));
 End;
 
-Function GL_CompassHeightDeg: Integer;
+{Function GL_CompassHeightDeg: Integer;
 var
   X, Y, Z: Double;
 begin
@@ -178,7 +178,7 @@ var
 begin
   glEulerAngles(X, Y, Z, GLXMatrices^, True);
   Result := Round(X);
-end;
+end;}
 
 Function GL_MakeCompass(Angle: Single; Tolerance: Integer = 5): Boolean;
 var
@@ -223,7 +223,22 @@ Begin
   Result := Abs(ShortestArcDeg(CurrentAngle, Angle)) <= Tolerance;
 End;
 
-Function GL_MakeCompassHeight(Height: Integer; Tolerance: Integer = 4): Boolean;
+Procedure GL_MakeAngleHigh(Highest: Boolean);
+Begin
+  If (Highest) Then
+  Begin
+    KeyDown(VK_UP);
+    Wait(RandomRange(450, 500));
+    KeyUp(VK_UP);
+  End Else
+    Begin
+      KeyDown(VK_DOWN);
+      Wait(RandomRange(450, 500));
+      KeyUp(VK_DOWN);
+    End;
+End;
+
+{Function GL_MakeCompassHeight(Height: Integer; Tolerance: Integer = 4): Boolean;
 var
   T: Timer;
   Up: Boolean;
@@ -262,7 +277,7 @@ Begin
   Else
     KeyUp(VK_DOWN);
   Result := Abs(CurrentHeight - Height) <= Tolerance;
-End;
+End;}
 
 Function GL_MapToImage: Integer;
 var
