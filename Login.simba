@@ -1,4 +1,13 @@
 {$include_once GLX/Mouse.Simba}
+{$IFDEF SMART8API}
+{$include_once GLX/Misc/SMART8API.Simba}
+{$ELSE IF SMART}
+{$include_once GLX/Misc/SMART.Simba}
+{$ENDIF}
+
+{$IFDEF SMART}
+Procedure SetupGLX(var Smart: TSmart; Width, Height: Integer); Forward;
+{$ENDIF}
 
 const
   GLI_ChatBubble      = 24990;
@@ -30,6 +39,43 @@ Begin
 
   If (Not Result) Then
     Result := (Length(glGetTextures(GLI_RSLogo)) > 0);
+End;
+
+Function GL_GameSession: Boolean;
+var
+  I: Integer;
+  BA: TBoxArray;
+  Text: glTextArray;
+  T: glTextureArray;
+Begin
+  Result := False;
+  If ((Not GL_LoggedIn) And (Length(glGetTextures(248631)) > 0)) Then //Exclamation
+  Begin
+    T := glGetTextures([449901, 448606, 399681, 399068]);
+    SetLength(BA, Length(T));
+    For I := 0 To High(T) Do
+      BA[I] := T[I].Bounds;
+
+    Text := glCharsToTexts(glGetChars(BA.Bounds), 3, 5);
+
+    For I := 0 To High(Text) Do
+      If (ExecRegExpr('game\ssession', Text[I].Text)) Then
+        Result := True;
+  End;
+End;
+
+Function GL_RestartClient{$IFDEF SMART}(var Smart: TSmart){$ENDIF}: Boolean;
+var
+  W, H: Integer;
+Begin
+  Result := False;
+  {$IFDEF SMART}
+  W := Smart.Width;
+  H := Smart.Height;
+  Smart.Destroy;
+  SetupGLX(Smart, W, H);
+  {$ENDIF}
+  Result := GL_RSReady;
 End;
 
 Function GL_ExitToLobby: Boolean;
