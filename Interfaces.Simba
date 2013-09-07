@@ -357,7 +357,7 @@ var
 Begin
   Result := IntToBox(-1, -1, -1, -1);
   T := glGetTextures(224744, GL_InvBounds);
-  If ((SKILL >= 0) and (SKILL <= Length(T))) Then
+  If ((SKILL >= 0) and (SKILL <= Length(T)) and (Length(T) > 0)) Then
     Result := T[Ord(SKILL)].Bounds;
 End;
 

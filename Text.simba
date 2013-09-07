@@ -158,7 +158,7 @@ Begin
 
   If ((Length(TL) < 1) Or (Length(LR) < 1)) Then Exit;
   MenuBounds := IntToBox(TL[0].Bounds.X1, TL[0].Bounds.Y2, LR[1].Bounds.X2, LR[1].Bounds.Y2);
-  Result := glCharsToTexts(glGetChars(MenuBounds), 4, 7);
+  Result := glCharsToTexts(glGetChars(MenuBounds), 5, 7);
 End;
 
 Function GL_ChooseOption(Texts: TStringArray; Action: Integer): Boolean;

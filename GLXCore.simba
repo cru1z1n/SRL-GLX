@@ -20,6 +20,7 @@ type glModel = record
 end;
 
 type glChar = record
+  TextureID: Cardinal;
   Colour: Cardinal;
   X, Y: Integer;
   Letter: Char;

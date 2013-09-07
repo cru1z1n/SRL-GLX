@@ -166,7 +166,7 @@ Begin
   End;
 End;
 
-Function CountBankInv(G: TGraphics): Integer;
+Function GL_CountBankInv(G: TGraphics): Integer;
   Function glGetTexturesEx(Area: TBox; IDs: TIntegerArray): glTextureArray;
     var
       Size, I, J: Cardinal;
@@ -203,6 +203,100 @@ Begin
     Begin
       Result := High(T) - I;
       Exit;
+    End;
+  End;
+End;
+
+Function GL_Withdraw(ID: Integer; Uptexts: TStringArray; Amount: Integer = 0): Boolean;
+var
+  I: Integer;
+  T, Chat: glTextureArray;
+  Clock: Integer;
+Begin
+  T := glGetTextures(ID, GL_BankBounds);
+
+  For I := 0 To High(T) Do
+  Begin
+    MouseBox(T[I].Bounds, MOUSE_MOVE);
+    Wait(RandomRange(300, 700));
+    If (GL_IsMouseUpText(Uptexts)) Then
+    Begin
+      ClickMouse(MOUSE_RIGHT);
+      Case Amount Of
+        -1: Result := GL_ChooseOption('-All but');
+        -0: Result := GL_ChooseOption('-All');
+      Else
+        Begin
+          Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_NIL);
+          If (Not Result) Then
+          Begin
+            If GL_ChooseOption('-X') Then
+            Begin
+              Clock := GetSystemTime;
+              While(GetSystemTime - Clock < 2500) Do
+              Begin
+                Chat := glGetTextures(17204850);  //Search Area.
+                If (Length(Chat) > 0) Then
+                Begin
+                  Wait(RandomRange(300, 500));
+                  TypeSend(ToStr(Amount));
+                  Result := True;
+                  Break;
+                End;
+                Wait(RandomRange(50, 100));
+              End;
+            End;
+          End Else
+            Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_LEFT);
+        End;
+      End;
+    End;
+  End;
+End;
+
+Function GL_Withdraw(ID, Colour, Tolerance: Integer; Uptexts: TStringArray; Amount: Integer = 0): Boolean; overload;
+var
+  I: Integer;
+  T, Chat: glTextureArray;
+  Clock: Integer;
+Begin
+  T := glGetTextures(ID, Colour, Tolerance, GL_BankBounds);
+
+  For I := 0 To High(T) Do
+  Begin
+    MouseBox(T[I].Bounds, MOUSE_MOVE);
+    Wait(RandomRange(300, 700));
+    If (GL_IsMouseUpText(Uptexts)) Then
+    Begin
+      ClickMouse(MOUSE_RIGHT);
+      Case Amount Of
+        -1: Result := GL_ChooseOption('-All but');
+        -0: Result := GL_ChooseOption('-All');
+      Else
+        Begin
+          Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_NIL);
+          If (Not Result) Then
+          Begin
+            If GL_ChooseOption('-X') Then
+            Begin
+              Clock := GetSystemTime;
+              While(GetSystemTime - Clock < 2500) Do
+              Begin
+                Chat := glGetTextures(17204850);  //Search Area.
+                If (Length(Chat) > 0) Then
+                Begin
+                  Wait(RandomRange(300, 500));
+                  TypeSend(ToStr(Amount));
+                  Result := True;
+                  Break;
+                End;
+                Wait(RandomRange(50, 100));
+              End;
+            End;
+          End Else
+            Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_LEFT);
+        End;
+      End;
     End;
   End;
 End;
