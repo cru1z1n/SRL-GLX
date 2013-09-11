@@ -456,7 +456,7 @@ Begin
 
   For I := 0 To Size - 1 Do
   Begin
-    if (PointInBox(Point(Integer((Ptr + sizeof(Integer))^), Integer((Ptr + (sizeof(Integer) * 2))^)), Area)) then
+    if (PointInBox(Point(Integer((Ptr + (sizeof(Integer) * 2))^), Integer((Ptr + (sizeof(Integer) * 3))^)), Area)) then
     begin
       Result[J] := glChar(Ptr^);
       Inc(J);
