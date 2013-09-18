@@ -1,7 +1,23 @@
+{*
+    This file contains all functions relating to the RS3 Inventory Interface.
+    This file includes gathering information on: Inventory Location/Area, Inventory Slots, Inventory Items, Inventory Count,
+    Item count, etc..
+*}
+
+
+
 {$include_once GLX/GLXCore.Simba}
 {$include_once GLX/Bank.Simba}
 {$include_once GLX/Cache.Simba}
 
+{*
+  Returns the Bounding-Box of the inventory.
+
+  Developer Info:
+    3786240  - TextureID of the inventory background (found in the middle of the inventory).
+    24990    - TextureID of the chat bubble next to the current player's name.
+    386611   - TextureID of the corners of the minimap.
+*}
 Function GL_InvBounds: TBox;
 Label Skip;
 var
@@ -10,7 +26,7 @@ var
 Begin
   If (UseSysCache) Then
   Begin
-    I := SysCache.Contains(CACHE_INV);
+    I := SysCache.Contains(TCacheType.CACHE_INV);
     if (I <> -1) Then
     Begin
       Result := SysCache[I].Area;
@@ -20,7 +36,7 @@ Begin
 
   Result := IntToBox(-1, -1, -1, -1);
   Background := glGetTextures(3786240);
-  Others := glGetTextures([24990, 386611]);    //ChatBubble, MMCorners
+  Others := glGetTextures([24990, 386611]);
   if (Length(Background) < 1) or (Length(Others) < 1) Then
     Exit;
 
@@ -40,11 +56,23 @@ Begin
   End;
 End;
 
+{*
+  Returns the amount of slots visible within the inventory.
+
+  Developer Info:
+    88625   - TextureID of the inventory slots.
+*}
 Function GL_CountInvSlots: Integer;
 Begin
   Result := Length(glGetTextures(88625, GL_InvBounds));
 End;
 
+{*
+  Returns an array of Boxes representing the Bounding-Boxes of each inventory slot.
+
+  Developer Info:
+    88625   - TextureID of the inventory slots.
+*}
 Function GL_InvSlots: TBoxArray;
 var
   I: Integer;
@@ -52,7 +80,7 @@ var
 Begin
   If (UseSysCache) Then
   Begin
-    I := SysCache.Contains(CACHE_INVSLOTS);
+    I := SysCache.Contains(TCacheType.CACHE_INVSLOTS);
     if (I <> -1) Then
     Begin
       Result := SysCache[I].Slots;
@@ -68,20 +96,41 @@ Begin
     SysCache.CacheInventorySlots(Result);
 End;
 
+{*
+  Returns the amount of items that are visible.
+
+  Developer Info:
+    3786240      - TextureID of the inventory background (found near the middle of the inventory).
+    88625        - TextureID of the inventory slots.
+    73440        - TextureID of the background of the money pouch icon (within the inventory interface; near the bottom).
+    58472        - TextureID of the money pouch icon (ID of the money pouch coins icon within the money pouch background mentioned above).
+    65081        - TextureID of the decal in the inventory interface (Near the bottom of the inventory, there are two of these).
+    28550        - TextureID of the bottom left and right corners of the inventory.
+    24480        - TextureID of the bottom of the inventory.
+
+    When the bank is open, the following ID's exist:
+    57120        - TextureID of the bank inventory's top and bottom.
+    20400        - TextureID of the bank inventory's top right corner and right side.
+    46967        - TextureID of the bank inventory's bottom right corner.
+*}
 Function GL_InvCount: Integer;
   Function glGetTexturesEx(Area: TBox; IDs: TIntegerArray): glTextureArray;
   var
-    Size, I, J: Cardinal;
     Ptr: Pointer;
+    Size, I, J: Cardinal;
+    XOffset, YOffset: Integer;
+    type ptr_glTexture = ^glTexture;
   Begin
     J := 0;
     Result := [];
     Ptr := GLXTextures(Size);
     SetLength(Result, Size);
+    XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+    YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
 
     For I := 0 To Size - 1 Do
     Begin
-      If (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area) And (Not IDs.Contains(Integer(Ptr^)))) Then
+      If (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area) And (Not IDs.Contains(Integer(Ptr^)))) Then
       Begin
         Result[J] := glTexture(Ptr^);
         Inc(J);
@@ -124,16 +173,25 @@ Begin
     End;
 End;
 
+{*
+  Returns whether or not the inventory is full.
+*}
 Function GL_InvFull: Boolean;
 Begin
   Result := GL_InvCount >= 28;
 End;
 
+{*
+  Returns a count of all items in the inventory with the specified TextureID.
+*}
 Function GL_CountItem(ID: Integer): Integer;
 Begin
   Result := Length(glGetTextures(ID, GL_InvBounds));
 End;
 
+{*
+  Returns whether or not an item with the specified TextureID exists in the inventory.
+*}
 Function GL_HasItem(ID: Integer): Boolean;
 Begin
   Result := GL_CountItem(ID) <> 0;

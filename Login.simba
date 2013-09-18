@@ -1,3 +1,15 @@
+{*
+    This file contains all functions relating to Login information.
+    This file is intended to retrieve the following information:
+
+      - Determining Login state
+      - Game Session Ended
+      - Restarting the client
+      - Logging in the player
+      - Logging out the player
+      - Interacting with the lobby
+*}
+
 {$include_once GLX/Mouse.Simba}
 {$IFDEF SMART8API}
 {$include_once GLX/Misc/SMART8API.Simba}
@@ -9,12 +21,6 @@
 Procedure SetupGLX(var Smart: TSmart; Width, Height: Integer); Forward;
 {$ENDIF}
 
-const
-  GLI_ChatBubble      = 24990;
-  GLI_LobbyTab        = 564570;
-  GLI_RSLogo          = 2021324;
-  GLI_LobbyExit       = 9369;
-
 type TPlayer = record
   Name: String;
   NickName: String;
@@ -23,24 +29,53 @@ type TPlayer = record
   World: TIntegerArray;
 end;
 
+{*
+  Returns whether or not the current player is in game/logged in fully.
+
+  Developer Info:
+    24990    - TextureID of the chat-bubble next to the player name in the chat box.
+*}
 Function GL_LoggedIn: Boolean;
 Begin
-  Result := (Length(glGetTextures(GLI_ChatBubble)) > 0);
+  Result := (Length(glGetTextures(24990)) > 0);
 End;
 
+{*
+  Returns whether or not the current player is in the lobby.
+
+  Developer Info:
+    564570    - TextureID of the lobby tab icons.
+*}
 Function GL_LobbyScreen: Boolean;
 Begin
-  Result := (Length(glGetTextures(GLI_LobbyTab)) = 6);
+  Result := (Length(glGetTextures(564570)) = 6);
 End;
 
+{*
+  Returns whether or not the player is in game or the lobby or on the login screen.
+  Returns false otherwise.
+
+  Developer Info:
+    2021324   - TextureID of the RS Logo on the login screen.
+*}
 Function GL_RSReady: Boolean;
 Begin
   Result := (GL_LoggedIn) Or (GL_LobbyScreen);
 
   If (Not Result) Then
-    Result := (Length(glGetTextures(GLI_RSLogo)) > 0);
+    Result := (Length(glGetTextures(2021324)) > 0);
 End;
 
+{*
+  Returns whether or not game session has ended.
+
+  Developer Info:
+    248631    - TextureID of the exclamation mark on the Game-Session interface.
+    449901    - TextureID of the top left corner of the Game-Session interface.
+    448606    - TextureID of the top right corner of the Game-Session interface.
+    399681    - TextureID of the bottom left corner of the Game-Session interface.
+    399068    - TextureID of the bottom right corner of the Game-Session interface.
+*}
 Function GL_GameSession: Boolean;
 var
   I: Integer;
@@ -49,7 +84,7 @@ var
   T: glTextureArray;
 Begin
   Result := False;
-  If ((Not GL_LoggedIn) And (Length(glGetTextures(248631)) > 0)) Then //Exclamation
+  If ((Not GL_LoggedIn) And (Length(glGetTextures(248631)) > 0)) Then
   Begin
     T := glGetTextures([449901, 448606, 399681, 399068]);
     SetLength(BA, Length(T));
@@ -64,6 +99,9 @@ Begin
   End;
 End;
 
+{*
+  Returns whether it was successful at restarting the specified Smart Client.
+*}
 Function GL_RestartClient{$IFDEF SMART}(var Smart: TSmart){$ENDIF}: Boolean;
 var
   W, H: Integer;
@@ -78,11 +116,20 @@ Begin
   Result := GL_RSReady;
 End;
 
+{*
+  Returns whether it successfully exited to the lobby from in game or if the player is
+  already in the lobby.
+*}
 Function GL_ExitToLobby: Boolean;
 Begin
-
 End;
 
+{*
+  Returns whether it successfully exited from the lobby to the login screen.
+
+  Developer Info:
+    9369    - TextureID of the lobby's exit button.
+*}
 Function GL_LeaveLobby: Boolean;
 var
   T: LongInt;
@@ -91,7 +138,7 @@ Begin
   T := GetSystemTime;
   While ((Not Result) And ((GetSystemTime - T) < 30000)) Do
   Begin
-    Textures := glGetTextures(GLI_LobbyExit);
+    Textures := glGetTextures(9369);
     If (Length(Textures) > 0) Then
       MouseBox(Textures[0].Bounds);
 
@@ -100,6 +147,14 @@ Begin
   End;
 End;
 
+{*
+  Returns whether it successfully logged in the specified player from the login screen
+  to the lobby.
+
+  Developer Info:
+    76466 -   TextureID of the left corner of the login box (Username OR Password Box).
+    76453 -   TextureID of the right corner of the login box (Username OR Password Box).
+*}
 Function GL_LoginToLobby(Player: TPlayer): Boolean;
 var
   I, J: Integer;
@@ -171,6 +226,14 @@ Begin
   Result := True;
 End;
 
+{*
+  Returns whether it successfully logged in the specified player fully from the login screen or
+  from the lobby screen to In-Game.
+
+  Developer Info:
+    95625     - TextureID of the Play Button on the lobby screen.
+    2461367   - ColourID of the Play button on the lobby screen.
+*}
 Function GL_LoginPlayer(Player: TPlayer): Boolean;
 var
   L: Integer;
@@ -180,7 +243,7 @@ Begin
   If (Not GL_LoggedIn) Then
     If (GL_LoginToLobby(Player)) Then
     Begin
-      PlayButton := glGetTextures(95625, 12029477, 10);
+      PlayButton := glGetTextures(95625, 2461367, 10);
       L := Length(PlayButton);
       If (L > 0) Then
       Begin

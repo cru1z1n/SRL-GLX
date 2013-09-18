@@ -4,8 +4,6 @@ const
 var
   OnTerminateProcs: TStringArray;
 
-type TCardinalArray = array of Cardinal;
-
 type Timer = record
   Time: Int64;
 end;
@@ -54,6 +52,11 @@ Begin
     TypeByte(VK_ENTER);
 End;
 
+Procedure Pointer.Inc(Size: Int64);
+Begin
+  Self := Self + Size;
+End;
+
 Procedure Delete(Ptr: Pointer; var Pointers: Array of Pointer); overload;
 var
   I, J: Integer = 0;
@@ -69,6 +72,21 @@ begin
   SetLength(Ptrs, J);
   Pointers := Ptrs;
 end;
+
+Function TBox.Width: Integer;
+Begin
+  Result := Abs(Self.X2 - Self.X1);
+End;
+
+Function TBox.Height: Integer;
+Begin
+  Result := Abs(Self.Y2 - Self.Y1);
+End;
+
+Function TBox.MidPoint: TPoint;
+Begin
+  Result := MiddleBox(Self);
+End;
 
 Function TIntegerArray.IndexOf(Value: Integer): Integer;
 var

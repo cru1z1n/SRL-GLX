@@ -1,3 +1,10 @@
+{*
+    This file contains all functions relating to the Bank of RS.
+    Withdrawing Items, Entering Pins, Depositing Items, etc..
+*}
+
+
+
 {$include_once GLXCore.Simba}
 {$include_once Cache.Simba}
 {$include_once Internals.Simba}
@@ -7,11 +14,25 @@
 
 Function GL_InvBounds: TBox; Forward;
 
+
+{*
+  Returns whether or not the PinScreen is Open.
+
+  Developer Info:
+    848640 = Pin Button TextureID.
+    1186662 = Pin Texture ColourID.
+*}
 Function GL_PinScreen: Boolean;
 Begin
-  Result := Length(glGetTextures(848640, 6297616, 5)) > 0;
+  Result := Length(glGetTextures(848640, 1186662, 5)) > 0;
 End;
 
+{*
+  Returns whether or not the Bank Screen is Open.
+
+  Developer Info:
+    714000 = TextureID containing the 'Bank of Runescape' Text.
+*}
 Function GL_BankScreen: Boolean;
 var
   B: TBox;
@@ -28,14 +49,24 @@ Begin
       Result := True;
 End;
 
+{*
+  Closes the BankScreen and returns whether or not it was successful
+  in doing so.
+
+  Developer Info:
+    714000  = TextureID containing the 'Bank of Runescape' Text.
+    16320   = Close Button TextureID.
+    2171469 = ColourID when not hovered over.
+    2898308 = ColourID when mouse hovered over.
+*}
 Function GL_CloseBank: Boolean;
 var
   I, J: Integer;
   T, C: glTextureArray;
 Begin
   Result := True;
-  T := glGetTextures(2322540);
-  C := glGetTextures(16320, 5055009, 5);
+  T := glGetTextures(714000);
+  C := glGetTextures([16320, 16320], [2171469, 2898308], [4, 4]);
   If (Length(T) < 1) or (Length(C) < 1) Then Exit;
 
   For I := 0 To High(T) Do
@@ -50,6 +81,14 @@ Begin
   Result := False;
 End;
 
+{*
+  Closes the PinScreen and returns whether or not it was successful
+  in doing so.
+
+  Developer Info:
+    13769 = TextureID of the top left of the Exit Button.
+    13134 = TextureID of the lower right of the Exit Button.
+*}
 Function GL_ClosePinScreen: Boolean;
 Var
   B: TBox;
@@ -93,6 +132,14 @@ Begin
   Result := Not GL_PinScreen;
 End;
 
+{*
+  Returns a Bounding-Box representing the area of the bank where items are located.
+
+  Developer Info:
+    714000  = TextureID containing the 'Bank of Runescape' Text.
+    88773   = TextureID of the lower right of the BankScreen.
+    3786240 = TextureID of the Background of the Bank. Same ID as that of the Inv, Chat, MM.
+*}
 Function GL_BankBounds: TBox;
 var
   I: Integer;
@@ -101,7 +148,7 @@ var
 Begin
   If (UseSysCache) Then
   Begin
-    I := SysCache.Contains(CACHE_BANK);
+    I := SysCache.Contains(TCacheType.CACHE_BANK);
     if (I <> -1) Then
     Begin
       Result := SysCache[I].Area;
@@ -123,6 +170,12 @@ Begin
     SysCache.CacheBank(Result);
 End;
 
+{*
+  Returns a Bounding-Box around the area of the bank's inventory where items are.
+
+  Developer Info:
+    3786240 = TextureID of the Background of the Bank. Same ID as that of the Inv, Chat, MM.
+*}
 Function GL_BankInvBounds: TBox;
 Label Skip;
 var
@@ -132,7 +185,7 @@ var
 Begin
   If (UseSysCache) Then
   Begin
-    I := SysCache.Contains(CACHE_BANK_INV);
+    I := SysCache.Contains(TCacheType.CACHE_BANK_INV);
     if (I <> -1) Then
     Begin
       Result := SysCache[I].Area;
@@ -166,28 +219,41 @@ Begin
   End;
 End;
 
+{*
+  Returns a count of all items in the inventory when the bank is open.
+
+  Developer Info:
+    57120 = TextureID of the top of the BankInventory.
+    20400 = TextureID of the top-right corner of the BankInventory. Same ID as the right side of the BankInventory.
+    46967 = TextureID of the bottom-right corner of the BankInventory.
+    3786240 = TextureID of the Background of the Bank. Same ID as that of the Inv, Chat, MM.
+*}
 Function GL_CountBankInv(G: TGraphics): Integer;
   Function glGetTexturesEx(Area: TBox; IDs: TIntegerArray): glTextureArray;
-    var
-      Size, I, J: Cardinal;
-      Ptr: Pointer;
-    Begin
-      J := 0;
-      Result := [];
-      Ptr := GLXTextures(Size);
-      SetLength(Result, Size);
+  var
+    Ptr: Pointer;
+    Size, I, J: Cardinal;
+    XOffset, YOffset: Integer;
+    type ptr_glTexture = ^glTexture;
+  Begin
+    J := 0;
+    Result := [];
+    Ptr := GLXTextures(Size);
+    SetLength(Result, Size);
+    XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+    YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
 
-      For I := 0 To Size - 1 Do
+    For I := 0 To Size - 1 Do
+    Begin
+      If (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area) And (Not IDs.Contains(Integer(Ptr^)))) Then
       Begin
-        If (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area) And (Not IDs.Contains(Integer(Ptr^)))) Then
-        Begin
-          Result[J] := glTexture(Ptr^);
-          Inc(J);
-        End;
-        Ptr.Inc(sizeof(glTexture));
+        Result[J] := glTexture(Ptr^);
+        Inc(J);
       End;
-      SetLength(Result, J);
+      Ptr.Inc(sizeof(glTexture));
     End;
+    SetLength(Result, J);
+  End;
 var
   I: Integer;
   Found: Boolean;
@@ -207,6 +273,16 @@ Begin
   End;
 End;
 
+{*
+  Withdraws an Item from the bank given the:
+    ID      =  TextureID of the item to withdraw.
+    Uptexts =  The mouse over text when hovering over the item.
+    Amount  =  Amount of the item to withdraw. Where 0 = All, -1 = All But One, X = Arbitrary Amount.
+
+  Developer Info:
+    17204850 = TextureID of the cream/brown area in the chatbox
+                where you enter the amount you wish to withdraw.
+*}
 Function GL_Withdraw(ID: Integer; Uptexts: TStringArray; Amount: Integer = 0): Boolean;
 var
   I: Integer;
@@ -235,7 +311,7 @@ Begin
               Clock := GetSystemTime;
               While(GetSystemTime - Clock < 2500) Do
               Begin
-                Chat := glGetTextures(17204850);  //Search Area.
+                Chat := glGetTextures(17204850);
                 If (Length(Chat) > 0) Then
                 Begin
                   Wait(RandomRange(300, 500));
@@ -254,6 +330,17 @@ Begin
   End;
 End;
 
+{*
+  Withdraws an Item from the bank given:
+    ID      =  TextureID of the item to withdraw.
+    Colour  =  ColourID of the item to withdraw.
+    Uptexts =  Mouse Over text of the item to withdraw.
+    Amount  =  Amount of the item to withdraw. Where 0 = All, -1 = All But One, X = Arbitrary Amount.
+
+  Developer Info:
+    17204850 = TextureID of the cream/brown area in the chatbox
+                where you enter the amount you wish to withdraw.
+*}
 Function GL_Withdraw(ID, Colour, Tolerance: Integer; Uptexts: TStringArray; Amount: Integer = 0): Boolean; overload;
 var
   I: Integer;
@@ -282,7 +369,7 @@ Begin
               Clock := GetSystemTime;
               While(GetSystemTime - Clock < 2500) Do
               Begin
-                Chat := glGetTextures(17204850);  //Search Area.
+                Chat := glGetTextures(17204850);
                 If (Length(Chat) > 0) Then
                 Begin
                   Wait(RandomRange(300, 500));

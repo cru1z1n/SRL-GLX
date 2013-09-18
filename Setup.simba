@@ -1,3 +1,5 @@
+{$C ON} {$B ON} {$M ON} {$F ON} {$S ON}
+
 {$include_once GLX/GLXCore.Simba}
 {$include_once GLX/Misc/Graphics.Simba}
 {$include_once GLX/Mouse.Simba}
@@ -23,6 +25,6 @@ Begin
   Smart.Create(W, H, '', ['OpenGL32.dll']);
   GLXMapHooks(Smart.ID);
   Smart.Graphics().Clear;
-  glDebug(GL_MODE_NONE, 0, 0, 0, Smart.Width, Smart.Height);
+  glDebug(GL_DEBUG_MODE.GL_MODE_NONE, 0, 0, 0, Smart.Width, Smart.Height);
   GLXSetColourCapture(False);
 End;

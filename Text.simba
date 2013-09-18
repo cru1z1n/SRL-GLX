@@ -1,6 +1,26 @@
+{*
+    This file contains all functions relating to manipulating and retrieving Text information.
+    This file contains functions for the following but is not limited to:
+
+      - Retrieving the mouse over text bounds
+      - Retrieving the Chat-box bounds
+      - Finding and choosing NPC options
+      - Finding and choosing right click options
+      - Determining whether right click options exist.
+*}
+
 {$include_once GLX/GLXCore.Simba}
 {$include_once GLX/Cache.Simba}
 
+
+{*
+  Returns the Bounding-Box that contains the text when the mouse hovers over an
+  object or interface in game from Upper left to lower right.
+
+  Developer Info:
+    8814    - TextureID of the top corners of the box.
+    8936    - TextureID of the bottom corners of the box.
+*}
 Function GL_MouseHoverBounds: TBox;
 var
   UL, BR: glTextureArray;
@@ -11,6 +31,14 @@ Begin
     Result := IntToBox(UL[0].Bounds.X1, UL[0].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2);
 End;
 
+{*
+  Returns the Bounding-Box that contains the text when the mouse hovers over some interfaces from
+  Upper right to lower left.
+
+  Developer Info:
+    8814    - TextureID of the top corners of the box.
+    8936    - TextureID of the bottom corners of the box.
+*}
 Function GL_InterfaceUpTextBounds: TBox;
 var
   UL, BR: glTextureArray;
@@ -21,6 +49,14 @@ Begin
     Result := IntToBox(UL[High(UL)].Bounds.X1, UL[High(UL)].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2);
 End;
 
+{*
+  Returns the Bounding-Box that contains the text when the mouse hovers over an object
+  or interface regardless of Box rendering order.
+
+  Developer Info:
+    8814    - TextureID of the top corners of the box.
+    8936    - TextureID of the bottom corners of the box.
+*}
 Function GL_UptextBounds: TBox;
 var
   UL, BR: glTextureArray;
@@ -36,6 +72,9 @@ Begin
   End;
 End;
 
+{*
+  Returns the text when the mouse hover over an object or interface.
+*}
 Function GL_GetMouseUpText: TStringArray;
 var
   glChars: glCharArray;
@@ -45,11 +84,17 @@ Begin
     Result := glCharsToText(glChars, 5, 5);
 End;
 
+{*
+  Returns whether the move over text contains the specified string.
+*}
 Function GL_IsMouseUpText(Text: String): Boolean;
 Begin
   Result := Pos(Text, Implode('', GL_GetMouseUpText)) > 0;
 End;
 
+{*
+  Returns whether the move over text contains ANY of the specified strings.
+*}
 Function GL_IsMouseUpText(Text: TStringArray): Boolean; overload;
 var
   I, H: Integer;
@@ -65,6 +110,13 @@ Begin
     End;
 End;
 
+{*
+  Returns whether the Bounding-Box of the player's chat-box.
+
+  Developer Info:
+    3786240 -   TextureID of the chatbox background (found in the middle of the chatbox).
+    24990   -   TextureID of the chat bubble found (next to the player's name in the chatbox).
+*}
 Function GL_ChatBounds: TBox;
 var
   I, J: Integer;
@@ -73,7 +125,7 @@ Begin
   If (Not GL_LoggedIn) Then Exit;
   If (UseSysCache) Then
   Begin
-    I := SysCache.Contains(CACHE_CHAT);
+    I := SysCache.Contains(TCacheType.CACHE_CHAT);
     if (I <> -1) Then
     Begin
       Result := SysCache[I].Area;
@@ -81,8 +133,8 @@ Begin
     End;
   End;
 
-  T := glGetTextures(3786240); //Chatbox texture.
-  S := glGetTextures(24990);   //ChatBubble.
+  T := glGetTextures(3786240);
+  S := glGetTextures(24990);
   If (Length(T) > 0 and Length(S) > 0) then
     For I := 0 To High(T) Do
       For J := 0 To High(S) Do
@@ -95,6 +147,21 @@ Begin
         end;
 End;
 
+{*
+  Returns whether or not it was successful at finding or choosing ANY of the specified
+  NPC options.
+
+  Example Options:
+    When talking to a banker, you are presented with the following 4 options:
+      - I'd like to access my bank account, please.
+      - I'd like to check my PIN settings.
+      - I'd like to see my collection box.
+      - What is this place?
+
+  Developer Info:
+    52107   - TextureID of the Left side of the NPC choose option interface.
+    52825   - TextureID of the Left side of the NPC choose option interface when hovered over.
+*}
 Function GL_FindNPCChatText(Texts: TStringArray; Action: Integer): Boolean;
 var
   B: TBox;
@@ -144,23 +211,48 @@ Begin
   End;
 End;
 
+{*
+  Returns whether it was successful at finding or choosing the specified NPC option.
+
+  Example Options:
+    When talking to a banker, you are presented with the following 4 options:
+      - I'd like to access my bank account, please.
+      - I'd like to check my PIN settings.
+      - I'd like to see my collection box.
+      - What is this place?
+*}
 Function GL_FindNPCChatText(Text: String; Action: Integer): Boolean; overload;
 Begin
   Result := GL_FindNPCChatText([Text], Action);
 End;
 
+{*
+  Returns a glTextArray containing the Options when an object, interface or item is right-clicked.
+  Also returns the Bounding-Box of the right-click interface.
+
+  Developer Info:
+    6120      - TextureID of the top corners of the right-click interface.
+    8882055   - ColourID of the top corners of the right-click interface.
+    8925      - TextureID of the bottom corners of the right-click interface.
+    10461087  - ColourID of the bottom corners of the right-click interface.
+*}
 Function GL_GetChooseOptions(var MenuBounds: TBox): glTextArray;
 var
   TL, LR: glTextureArray;
 Begin
-  TL := glGetTextures(6120, 5921370, 5);
-  LR := glGetTextures(8925, 4079167, 5);
+  TL := glGetTextures(6120, 8882055, 5);
+  LR := glGetTextures(8925, 10461087, 5);
 
   If ((Length(TL) < 1) Or (Length(LR) < 1)) Then Exit;
   MenuBounds := IntToBox(TL[0].Bounds.X1, TL[0].Bounds.Y2, LR[1].Bounds.X2, LR[1].Bounds.Y2);
   Result := glCharsToTexts(glGetChars(MenuBounds), 5, 7);
 End;
 
+{*
+  Returns whether it successfully found or executed the specified action
+  for ANY of the specified options in the right-click interface.
+  If an option is not found, the interface is closed and false is returned.
+*}
 Function GL_ChooseOption(Texts: TStringArray; Action: Integer): Boolean;
 var
   MP: TPoint;
@@ -210,16 +302,27 @@ Begin
   End;
 End;
 
+{*
+  Returns whether it successfully found and clicked ANY of the specified
+  options in the right-click interface.
+*}
 Function GL_ChooseOption(Options: TStringArray): Boolean; overload;
 Begin
   Result := GL_ChooseOption(Options, MOUSE_LEFT);
 End;
 
+{*
+  Returns whether it successfully found and clicked the specified option
+  in the right-click interface.
+*}
 Function GL_ChooseOption(Option: String): Boolean; overload;
 Begin
   Result := GL_ChooseOption([Option], MOUSE_LEFT);
 End;
 
+{*
+  Returns whether or not the specified options exist in the right-click interface.
+*}
 Function GL_OptionsExist(Options: TStringArray; MoveMouse: Boolean): Boolean;
 Begin
   If MoveMouse Then

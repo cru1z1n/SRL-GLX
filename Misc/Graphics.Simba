@@ -149,6 +149,23 @@ Begin
     End;
 End;
 
+Procedure TGraphics.DrawClippedBox(Box, ClipArea: TBox; Fill: Boolean = False; Colour: TColor = clRed);
+var
+  TPA: Array Of TPoint;
+Begin
+  If (Fill) Then
+  Begin
+    TPA := TPAFromBox(Box);
+    FilterPointsBox(TPA, ClipArea.X1, ClipArea.Y1, ClipArea.X2, ClipArea.Y2);
+    Self.__Bmp.DrawTPA(TPA, Colour);
+  End Else
+    Begin
+      TPA := EdgeFromBox(Box);
+      FilterPointsBox(TPA, ClipArea.X1, ClipArea.Y1, ClipArea.X2, ClipArea.Y2);
+      Self.__Bmp.DrawTPA(TPA, Colour);
+    End;
+End;
+
 Procedure TGraphics.DrawBoxes(Boxes: Array of TBox; Colour: TColor = clRed; Fill: Boolean = False);
 var
   I: Integer;

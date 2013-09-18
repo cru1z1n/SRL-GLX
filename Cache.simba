@@ -1,3 +1,12 @@
+{*
+    This file contains all functions relating to the Caching of variables and interface locations.
+    This file aim to speed up the retrieval of coordinates and variables by a very large amount!
+
+    Caching for the following are interfaces are enabled by DEFAULT:
+      - Caching Inventory, Minimap, Chat, Bank locations.
+      - Caching Inventory Slot, Bank Inventory locations.
+*}
+
 type TCacheType = (CACHE_NONE, CACHE_INV, CACHE_MINIMAP, CACHE_CHAT, CACHE_INVSLOTS, CACHE_BANK, CACHE_BANK_INV);
 
 type TCache = record
@@ -13,6 +22,15 @@ var
   UseSysCache: Boolean;
   SysCache: TCacheArray;
 
+{*
+  TCache constructor. Used to construct a cache object and store any type of variable/location.
+
+  Developer Info:
+    ID       = Type of information to cache. Also used for retrieval from the cache.
+    Location = Point on screen at which the center of the interface lies.
+    Area     = Bounding-Box around the interface.
+    InvSlots = Bounding-Boxes around each inventory slot if and only if caching the inventory.
+*}
 Function TCache.Create(__ID: TCacheType; __Location: TPoint; __Area: TBox; __InvSlots: TBoxArray): TCache;
 Begin
   Self.ID := __ID;
@@ -22,6 +40,13 @@ Begin
   Result := Self;
 End;
 
+{*
+  Returns the index of the specified cached interface if it exists.
+  Returns -1 Otherwise.
+
+  Developer Info:
+    ID = Type Identifier of the cache object to retrieve.
+*}
 Function TCacheArray.Contains(ID: TCacheType): Integer;
 var
   I: Integer;
@@ -35,6 +60,13 @@ Begin
   Result := -1;
 End;
 
+{*
+  Returns the Cached Object with the specified TypeID if it exists.
+  Returns a blank TCacheObject with TypeID CACHE_NONE otherwise.
+
+  Developer Info:
+    ID = Type Identifier of the cache object to retrieve.
+*}
 Function TCacheArray.GetCache(ID: TCacheType): TCache;
 var
   Index: Integer;
@@ -43,83 +75,135 @@ Begin
   If (Index <> -1) Then
     Result := Self[Index]
   Else
-    Result.ID = -1;
+    Result.ID = TCacheType.CACHE_NONE;
 End;
 
+{*
+  Caches the Inventory's Bounding-Box. If the Inventory is already cached,
+  the cached inventory object is overwritten with the new Bounding-Box object.
+
+
+  Developer Info:
+    Area: Bounding-Box around the inventory items.
+*}
 Procedure TCacheArray.CacheInventory(Area: TBox);
 var
   Index: Integer;
   InvCache: TCache;
 Begin
-  Index := SysCache.Contains(CACHE_INV);
+  Index := SysCache.Contains(TCacheType.CACHE_INV);
   If (Index = -1) Then
   Begin
-    Insert(InvCache.Create(CACHE_INV, MiddleBox(Area), Area, []), SysCache);
+    Insert(InvCache.Create(TCacheType.CACHE_INV, MiddleBox(Area), Area, []), SysCache);
   End Else
-    SysCache[Index] := InvCache.Create(CACHE_INV, MiddleBox(Area), Area, []);
+    SysCache[Index] := InvCache.Create(TCacheType.CACHE_INV, MiddleBox(Area), Area, []);
 End;
 
+{*
+  Caches the Inventory's slots. If the Inventory slots are already cached,
+  the cached is overwritten with a new Cache object containing the specified slots.
+
+
+  Developer Info:
+    Areas: Each Area is a Bounding-Box around the inventory slot.
+*}
 Procedure TCacheArray.CacheInventorySlots(Areas: TBoxArray);
 var
   Index: Integer;
   SlotCache: TCache;
 Begin
-  Index := SysCache.Contains(CACHE_INVSLOTS);
+  Index := SysCache.Contains(TCacheType.CACHE_INVSLOTS);
   If (Index = -1) Then
   Begin
-    Insert(SlotCache.Create(CACHE_INVSLOTS, Point(-1, -1), IntToBox(-1, -1, -1, -1), Areas), SysCache);
+    Insert(SlotCache.Create(TCacheType.CACHE_INVSLOTS, Point(-1, -1), IntToBox(-1, -1, -1, -1), Areas), SysCache);
   End Else
-    SysCache[Index] := SlotCache.Create(CACHE_INVSLOTS, Point(-1, -1), IntToBox(-1, -1, -1, -1), Areas);
+    SysCache[Index] := SlotCache.Create(TCacheType.CACHE_INVSLOTS, Point(-1, -1), IntToBox(-1, -1, -1, -1), Areas);
 End;
 
+{*
+  Caches the minimap area. If the minimap is already cached, the
+  cached object is overwritten with the a new cache object containing the
+  new bounding area.
+
+
+  Developer Info:
+    Area: A Bounding-Box around the minimap.
+*}
 Procedure TCacheArray.CacheMiniMap(Area: TBox);
 var
   Index: Integer;
   MMCache: TCache;
 Begin
-  Index := SysCache.Contains(CACHE_MINIMAP);
+  Index := SysCache.Contains(TCacheType.CACHE_MINIMAP);
   If (Index = -1) Then
   Begin
-    Insert(MMCache.Create(CACHE_MINIMAP, MiddleBox(Area), Area, []), SysCache);
+    Insert(MMCache.Create(TCacheType.CACHE_MINIMAP, MiddleBox(Area), Area, []), SysCache);
   End Else
-    SysCache[Index] := MMCache.Create(CACHE_MINIMAP, MiddleBox(Area), Area, []);
+    SysCache[Index] := MMCache.Create(TCacheType.CACHE_MINIMAP, MiddleBox(Area), Area, []);
 End;
 
+{*
+  Caches the chat area. If the chatbox is already cached, the
+  cached object is overwritten with the a new cache object containing the
+  new bounding area.
+
+
+  Developer Info:
+    Area: A Bounding-Box around the player's chatbox.
+*}
 Procedure TCacheArray.CacheChat(Area: TBox);
 var
   Index: Integer;
   ChatCache: TCache;
 Begin
-  Index := SysCache.Contains(CACHE_CHAT);
+  Index := SysCache.Contains(TCacheType.CACHE_CHAT);
   If (Index = -1) Then
   Begin
-    Insert(ChatCache.Create(CACHE_CHAT, MiddleBox(Area), Area, []), SysCache);
+    Insert(ChatCache.Create(TCacheType.CACHE_CHAT, MiddleBox(Area), Area, []), SysCache);
   End Else
-    SysCache[Index] := ChatCache.Create(CACHE_CHAT, MiddleBox(Area), Area, []);
+    SysCache[Index] := ChatCache.Create(TCacheType.CACHE_CHAT, MiddleBox(Area), Area, []);
 End;
 
+{*
+  Caches the Bank area containing items. If the Bank is already cached, the
+  cached object is overwritten with the a new cache object containing the
+  new bounding area.
+
+
+  Developer Info:
+    Area: A Bounding-Box around the part of the Bank interface containing items.
+*}
 Procedure TCacheArray.CacheBank(Area: TBox);
 var
   Index: Integer;
   BankCache: TCache;
 Begin
-  Index := SysCache.Contains(CACHE_BANK);
+  Index := SysCache.Contains(TCacheType.CACHE_BANK);
   If (Index = -1) Then
   Begin
-    Insert(BankCache.Create(CACHE_BANK, MiddleBox(Area), Area, []), SysCache);
+    Insert(BankCache.Create(TCacheType.CACHE_BANK, MiddleBox(Area), Area, []), SysCache);
   End Else
-    SysCache[Index] := BankCache.Create(CACHE_BANK, MiddleBox(Area), Area, []);
+    SysCache[Index] := BankCache.Create(TCacheType.CACHE_BANK, MiddleBox(Area), Area, []);
 End;
 
+{*
+  Caches the Bank's inventory area. If the Bank's inventory is already cached, the
+  cached object is overwritten with the a new cache object containing the
+  new bounding area.
+
+
+  Developer Info:
+    Area: A Bounding-Box around the Bank's inventory area.
+*}
 Procedure TCacheArray.CacheBankInv(Area: TBox);
 var
   Index: Integer;
   BankInvCache: TCache;
 Begin
-  Index := SysCache.Contains(CACHE_BANK_INV);
+  Index := SysCache.Contains(TCacheType.CACHE_BANK_INV);
   If (Index = -1) Then
   Begin
-    Insert(BankInvCache.Create(CACHE_BANK_INV, MiddleBox(Area), Area, []), SysCache);
+    Insert(BankInvCache.Create(TCacheType.CACHE_BANK_INV, MiddleBox(Area), Area, []), SysCache);
   End Else
-    SysCache[Index] := BankInvCache.Create(CACHE_BANK_INV, MiddleBox(Area), Area, []);
+    SysCache[Index] := BankInvCache.Create(TCacheType.CACHE_BANK_INV, MiddleBox(Area), Area, []);
 End;

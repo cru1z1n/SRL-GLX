@@ -1,3 +1,17 @@
+{*
+    This file contains all functions relating to communication with the GLX/OpenGL plugin.
+    This file will only contain function for retrieval of information from the plugin such as
+    but not limited to:
+
+    - Models
+    - Textures
+    - Font Spacing
+    - Font Characters
+    - Text Recognition
+    - Debugging All Of The Above
+*}
+
+
 {$loadlib GLX}
 {$include_once GLX/Internals.Simba}
 //OffsetOf - PtrUInt(@(CStruct(nil + 1)^.Y)) - 1;
@@ -9,6 +23,7 @@ type
 type glTexture = record
   ID: Integer;
   ColourID: Integer;
+  FullColourID: Integer;
   X, Y: Integer;
   Bounds: TBox;
 end;
@@ -48,21 +63,35 @@ type
   glModelArray = array of glModel;
   glTextureArray = array of glTexture;
 
-Procedure Pointer.Inc(Size: Int64);
-Begin
-  Self := Self + Size;
-End;
 
+{*
+  Returns the width of a specified texture.
+
+  Usage Info:
+    writeln(SomeTexture.Width());
+*}
 Function glTexture.Width: Integer;
 Begin
   Result := Self.Bounds.X2 - Self.Bounds.X1;
 End;
 
+{*
+  Returns the height of a specified texture.
+
+  Usage Info:
+    writeln(SomeTexture.Height());
+*}
 Function glTexture.Height: Integer;
 Begin
   Result := Self.Bounds.Y2 - Self.Bounds.Y1;
 End;
 
+{*
+  Returns the unsafe-bounding box of two textures.
+
+  Usage Info:
+    writeln(glTextureBounds(UpperLeftTexture, LowerRightTexture));
+*}
 Function glTextureBounds(var A, B: glTexture): TBox;
 Begin
   Result := IntToBox(A.Bounds.X1, A.Bounds.Y1, B.Bounds.X2, B.Bounds.Y2);
@@ -79,16 +108,47 @@ Begin
   End;
 End;
 
+{*
+  Enabled Debugging of any OpenGL type.
+
+  Usage Info:
+    GL_MODE_NONE     = Disable All Debugging on screen. Other parameters have no effect.
+
+    GL_MODE_TEXTURES = Debug Textures on screen. X1, Y1, X2, Y2 specifies the clipping
+                       area in which the textures must lie.
+
+    GL_MODE_MODELS   = Debug Models on screen. X1, Y1, X2, Y2 specifies the clipping
+                       area in which the Models must lie.
+
+    GL_MODE_FONTS    = Debug Fonts on screen. X1, Y1, X2, Y2 specifies the clipping
+                       area in which the fonts must lie.
+
+    GL_MODE_HUD      = Debug as well as draw on screen any texture with the ID specified by
+                       HudID. Other parameters have no effect.
+*}
 Procedure glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal = 0; X1, Y1, X2, Y2: Integer = 0);
 Begin
   GLXDebug(Ord(Mode), HudID, X1, Y1, X2, Y2);
 End;
 
+{*
+  Enabled Debugging of any OpenGL type. A convenience overload.
+
+  Usage Info:
+    Same as glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal = 0; X1, Y1, X2, Y2: Integer = 0);
+    but instead takes a TBox instead of X1, Y1, X2, Y2.
+*}
 Procedure glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal; Area: TBox); overload;
 Begin
   GLXDebug(Ord(Mode), HudID, Area.X1, Area.Y1, Area.X2, Area.Y2);
 End;
 
+{*
+  Returns an array of ALL textures rendered on the screen.
+
+  Usage Info:
+    writeln(glGetTextures);
+*}
 Function glGetTextures: glTextureArray;
 var
   Size, I: Cardinal;
@@ -105,6 +165,13 @@ Begin
   End;
 End;
 
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureID.
+
+  Usage Info:
+    writeln(glGetTextures(1024));
+*}
 Function glGetTextures(ID: Integer): glTextureArray; overload;
 var
   Size, I, J: Cardinal;
@@ -127,6 +194,14 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureIDs. Used for finding multiple textures at once.
+
+  Usage Info:
+    1 - glGetTextures(Array_Of_Texture_IDs);
+    2 - glGetTextures([1024, 2048, 3072, 4096]);
+*}
 Function glGetTextures(IDs: TIntegerArray): glTextureArray; overload;
 var
   Size, I, J: Cardinal;
@@ -149,19 +224,33 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of textures rendered on the screen that are within
+  the specified area.
+
+  Usage Info:
+    1 - glGetTextures(Box_Containing_Textures_To_Find);
+    2 - glGetTextures(IntToBox(X1, Y1, X2, Y2));
+    3 - glGetTextures(InventoryBounds);
+    4 - etc..
+*}
 Function glGetTextures(Area: TBox): glTextureArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area)) then
+    if (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area)) then
     begin
       Result[J] := glTexture(Ptr^);
       Inc(J);
@@ -171,19 +260,32 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  ID and is within the specified area.
+
+  Usage Info:
+    1 - glGetTextures(1024, InventoryBounds);
+    2 - glGetTextures(2048, IntToBox(X1, Y1, X2, Y2));
+    3 - etc..
+*}
 Function glGetTextures(ID: Integer; Area: TBox): glTextureArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if ((Integer(Ptr^) = ID) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    if ((Integer(Ptr^) = ID) and (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area))) then
     begin
       Result[J] := glTexture(Ptr^);
       Inc(J);
@@ -193,19 +295,34 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureIDs and is within the specified area. Used for finding multiple textures
+  at once in a specific area on screen.
+
+  Usage Info:
+    1 - glGetTextures(Array_Of_Texture_IDs, InventoryBounds);
+    2 - glGetTextures([1024, 2048, 3072, 4096], InventoryBounds);
+    3 - glGetTextures([1024, 2048, 3072, 4096], IntToBox(X1, Y1, X2, Y2));
+    4 - etc..
+*}
 Function glGetTextures(IDs: TIntegerArray; Area: TBox): glTextureArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if (IDs.Contains(Integer(Ptr^)) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    if (IDs.Contains(Integer(Ptr^)) and (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area))) then
     begin
       Result[J] := glTexture(Ptr^);
       Inc(J);
@@ -215,19 +332,32 @@ Begin
   SetLength(Result, J);
 End;
 
-Function glGetTextures(ID, ColourID, Tolerance: Cardinal): glTextureArray; overload;
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureID and a Similar ColourID within a specified tolerance/threshold.
+  Tolerance specifies how strict the search will be. The lower, the more accurate.
+
+  Usage Info:
+    1 - glGetTextures(1024, 21442352, 5);
+    2 - glGetTextures(LobsterID, LobsterColourID, 5);
+    3 - etc..
+*}
+Function glGetTextures(ID, ColourID, Tolerance: Integer): glTextureArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  ColourIDOffset: Cardinal;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if ((Integer(Ptr^) = ID) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourID, Tolerance))) then
+    if ((Integer(Ptr^) = ID) and (SimilarColors(Integer((Ptr + ColourIDOffset)^), ColourID, Tolerance))) then
     begin
       Result[J] := glTexture(Ptr^);
       Inc(J);
@@ -237,20 +367,35 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureIDs and a Similar ColourIDs within the specified tolerances/thresholds.
+  Tolerances specifies how strict the search will be. The lower, the more accurate.
+  Used for finding multiple textures at once.
+
+  Usage Info:
+    1 - glGetTextures([1, 2], [1_ColourID, 2_ColourID], [1_Tolerance, 2_Tolerance]);
+    2 - glGetTextures([LobsterID, SharkID], [LobsterColourID, SharkColourID], [LobsterTolerance, SharkTolerance]);
+    3 - glGetTextures(ArrayOfIDs, ArrayOfColourIDs, ArrayOfTolerances);
+    4 - etc..
+*}
 Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray): glTextureArray; overload;
 var
-  Size, I, J, K: Cardinal;
   Ptr: Pointer;
+  Size, I, J, K: Cardinal;
+  ColourIDOffset: Cardinal;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
     For J := 0 To High(IDs) Do
-      If ((IDs[J] = Integer(Ptr^)) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourIDs[J], Tolerances[J]))) then
+      If ((IDs[J] = Integer(Ptr^)) and (SimilarColors(Integer((Ptr + ColourIDOffset)^), ColourIDs[J], Tolerances[J]))) then
       begin
         Result[K] := glTexture(Ptr^);
         Inc(K);
@@ -261,19 +406,37 @@ Begin
   SetLength(Result, K);
 End;
 
-Function glGetTextures(ID, ColourID, Tolerance: Cardinal; Area: TBox): glTextureArray; overload;
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureID, a Similar ColourID within a specified tolerance/threshold and is within
+  a specified area on screen.
+
+  Tolerance specifies how strict the search will be. The lower, the more accurate.
+
+  Usage Info:
+    1 - glGetTextures(1024, 21442352, 5, InventoryBounds);
+    2 - glGetTextures(LobsterID, LobsterColourID, 5, BankBounds);
+    3 - etc..
+*}
+Function glGetTextures(ID, ColourID, Tolerance: Integer; Area: TBox): glTextureArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  ColourIDOffset: Cardinal;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
+  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if ((Integer(Ptr^) = ID) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourID, Tolerance)) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    if ((Integer(Ptr^) = ID) and (SimilarColors(Integer((Ptr + ColourIDOffset)^), ColourID, Tolerance)) and (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area))) then
     begin
       Result[J] := glTexture(Ptr^);
       Inc(J);
@@ -283,20 +446,40 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of textures rendered on the screen that have the specified
+  TextureIDs, a Similar ColourIDs within a specified tolerances/thresholds and is within
+  a specified area.
+
+  Tolerance specifies how strict the search will be. The lower, the more accurate.
+  Used for finding multiple textures within an area.
+
+  Usage Info:
+    1 - glGetTextures([1, 2], [1_ColourID, 2_ColourID], [1_Tolerance, 2_Tolerance], InventoryBounds);
+    2 - glGetTextures([LobsterID, SharkID], [LobsterColourID, SharkColourID], [LobsterTolerance, SharkTolerance], BankBounds);
+    3 - glGetTextures(ArrayOfIDs, ArrayOfColourIDs, ArrayOfTolerances, AreaToSearch);
+    4 - etc..
+*}
 Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray; Area: TBox): glTextureArray; overload;
 var
-  Size, I, J, K: Cardinal;
   Ptr: Pointer;
+  Size, I, J, K: Cardinal;
+  XOffset, YOffset: Integer;
+  ColourIDOffset: Cardinal;
+  type ptr_glTexture = ^glTexture;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
+  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
     For J := 0 To High(IDs) Do
-      If ((IDs[J] = Integer(Ptr^)) and (SimilarColors(Integer((Ptr + sizeof(Integer))^), ColourIDs[J], Tolerances[J])) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+      If ((IDs[J] = Integer(Ptr^)) and (SimilarColors(Integer((Ptr + ColourIDOffset)^), ColourIDs[J], Tolerances[J])) and (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area))) then
       begin
         Result[K] := glTexture(Ptr^);
         Inc(K);
@@ -307,6 +490,12 @@ Begin
   SetLength(Result, K);
 End;
 
+{*
+  Returns an array of ALL Models rendered on screen.
+
+  Usage Info:
+    writeln(glGetModels);
+*}
 Function glGetModels: glModelArray;
 var
   Size, I: Cardinal;
@@ -323,6 +512,12 @@ Begin
   End;
 End;
 
+{*
+  Returns an array of Models rendered on screen with the specified ID.
+
+  Usage Info:
+    glGetModels(1024);
+*}
 Function glGetModels(ID: Cardinal): glModelArray; overload;
 var
   Size, I, J: Cardinal;
@@ -344,6 +539,16 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of Models rendered on screen that have the specified IDs.
+  Used for finding multiple models at once.
+
+  Usage Info:
+    1 - glGetModels([1024, 2048, 3072, 4096]);
+    2 - glGetModels(Array_Of_Models_To_Find);
+    3 - glGetModels(TCardinalArray[1024, 2048, 3072, 4096]);
+    4 - etc..
+*}
 Function glGetModels(IDs: TCardinalArray): glModelArray; overload;
 var
   Size, I, J: Cardinal;
@@ -365,18 +570,31 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of Models rendered on screen that are within the specified area.
+
+  Usage Info:
+    1 - glGetModels(IntToBox(X1, Y1, X2, Y2));
+    2 - glGetModels(Main_Screen_Bounds);
+    3 - glGetModels(Area_To_Search);
+    4 - etc..
+*}
 Function glGetModels(Area: TBox): glModelArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glModel = ^glModel;
 Begin
   Result := [];
   Ptr := GLXModels(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glModel(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glModel(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area)) then
+    if (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area)) then
     begin
       Result[J] := glModel(Ptr^);
       Inc(J);
@@ -386,18 +604,32 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of Models rendered on screen that have the specified ID and
+  is within the specified area.
+
+  Usage Info:
+    1 - glGetModels(1024, Main_Screen);
+    2 - glGetModels(2048, IntToBox(X1, Y1, X2, Y2));
+    3 - glGetModels(My_Player_ID, Some_Area_To_Search);
+    4 - etc..
+*}
 Function glGetModels(ID: Cardinal; Area: TBox): glModelArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glModel = ^glModel;
 Begin
   Result := [];
   Ptr := GLXModels(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glModel(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glModel(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if ((Cardinal(Ptr^) = ID) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    if ((Cardinal(Ptr^) = ID) and (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area))) then
     begin
       Result[J] := glModel(Ptr^);
       Inc(J);
@@ -407,18 +639,32 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of Models rendered on screen that have the specified IDs and
+  is within the specified Area. Used for finding multiple models at once.
+
+  Usage Info:
+    1 - glGetModels([1024, 2048, 3072, 4096], Main_Screen);
+    2 - glGetModels(Array_Of_Models_To_Find, Area_To_Search);
+    3 - glGetModels(TCardinalArray[1024, 2048, 3072, 4096], IntToBox(X1, Y1, X2, Y2));
+    4 - etc..
+*}
 Function glGetModels(IDs: TCardinalArray; Area: TBox): glModelArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glModel = ^glModel;
 Begin
   Result := [];
   Ptr := GLXModels(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glModel(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glModel(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if (IDs.Contains(Cardinal(Ptr^)) and (PointInBox(Point(Integer((Ptr + sizeof(Integer) * 2)^), Integer((Ptr + sizeof(Integer) * 3)^)), Area))) then
+    if (IDs.Contains(Cardinal(Ptr^)) and (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area))) then
     begin
       Result[J] := glModel(Ptr^);
       Inc(J);
@@ -428,6 +674,16 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Returns an array of all font/text characters rendered to the screen.
+
+  Note:
+    Fonts/Chars/Text may contain shadows. Ex: 'LLooggiinn Ppllaayyeerr'
+    instead of 'Login Player'.
+
+  Usage Info:
+    writeln(glGetChars);
+*}
 Function glGetChars: glCharArray;
 var
   Size, I: Cardinal;
@@ -444,19 +700,36 @@ Begin
   End;
 End;
 
+{*
+  Returns an array of all font/text characters rendered to the screen within
+  a specified area.
+
+  Note:
+    Fonts/Chars/Text may contain shadows. Ex: 'LLooggiinn Ppllaayyeerr'
+    instead of 'Login Player'.
+
+  Usage Info:
+    1 - glGetChars(IntToBox(X1, Y1, X2, Y2));
+    2 - glGetChars(ChatBox);
+    3 - glGetChars(Some_Area_To_Search);
+*}
 Function glGetChars(Area: TBox): glCharArray; overload;
 var
-  Size, I, J: Cardinal;
   Ptr: Pointer;
+  Size, I, J: Cardinal;
+  XOffset, YOffset: Integer;
+  type ptr_glChar = ^glChar;
 Begin
   J := 0;
   Result := [];
   Ptr := GLXFonts(Size);
   SetLength(Result, Size);
+  XOffset := (PtrUInt(@(ptr_glChar(nil + 1)^.X)) - 1);
+  YOffset := (PtrUInt(@(ptr_glChar(nil + 1)^.Y)) - 1);
 
   For I := 0 To Size - 1 Do
   Begin
-    if (PointInBox(Point(Integer((Ptr + (sizeof(Integer) * 2))^), Integer((Ptr + (sizeof(Integer) * 3))^)), Area)) then
+    if (PointInBox(Point(Integer((Ptr + XOffset)^), Integer((Ptr + YOffset)^)), Area)) then
     begin
       Result[J] := glChar(Ptr^);
       Inc(J);
@@ -466,6 +739,18 @@ Begin
   SetLength(Result, J);
 End;
 
+{*
+  Removes all shadow fonts/text/characters from the specified array of glChar.
+
+  Example:
+    'LLooggiinn Ppllaayyeerr' ----> 'Login Player'.
+
+  Usage Info:
+    1 - glRemoveTextShadows(glGetChars);
+    2 - glRemoveTextShadows(glGetChars(SomeArea));
+    3 - glRemoveTextShadows(glGetChars(IntToBox(X1, Y1, X2, Y2)));
+    4 - etc..
+*}
 Function glRemoveTextShadows(var Chars: glCharArray): glCharArray;
 var
   I, J: Integer;
@@ -482,6 +767,16 @@ begin
   SetLength(Result, J);
 end;
 
+{*
+  Returns the amount of space between fonts/texts/characters on screen
+  (In Logical Units).
+
+  Usage Info:
+    1 - glGetCharSpacing(glGetChars);
+    2 - glGetCharSpacing(glGetChars(SomeArea));
+    3 - glGetCharSpacing(glGetChars(IntToBox(X1, Y1, X2, Y2)));
+    4 - etc..
+*}
 Function glGetCharSpacing(var glChars: glCharArray): Integer;
 var
   I, W, S: Integer = 0;
@@ -498,6 +793,21 @@ Begin
   end;
 End;
 
+{*
+  Turns an array of characters/fonts into legible text.
+  Automatically removes all font/text shadows. Each Index in the array represents a new line.
+
+  Usage Info:
+      StringArray := glCharsToText(glGetChars(ChatBox), 5, 5));
+      writeln(StringArray[0]);  //Prints Line 1.
+      writeln(StringArray[1]);  //Prints Line 2.
+  etc..
+
+  Developer Info:
+    glChars     = List Of Fonts rendered on screen.
+    MinHSpacing = Minimum amount of space you think is between each character in the text (Horizontal spacing).
+    MinVSpacing = Minimum amount of space you think is between each new line in the text (Vertical spacing).
+*}
 Function glCharsToText(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): TStringArray;
 var
   I, W: Integer;
@@ -520,6 +830,23 @@ begin
   ExplodeWrap('\r\n', Trim(Str), Result);
 end;
 
+{*
+  Turns an array of characters/fonts into a structure containing the legible text as well as
+  the bounding-box around the text.
+
+  Automatically removes all font/text shadows. Each Index in the array represents a new line.
+
+  Usage Info:
+      glTextArray := glCharsToText(glGetChars(ChatBox), 5, 5));
+      writeln(glTextArray[0].Text);  //Prints Line 1.
+      writeln(glTextArray[0].Bounds); //Prints the area in which Line 1 was found.
+  etc..
+
+  Developer Info:
+    glChars     = List Of Fonts rendered on screen.
+    MinHSpacing = Minimum amount of space you think is between each character in the text (Horizontal spacing).
+    MinVSpacing = Minimum amount of space you think is between each new line in the text (Vertical spacing).
+*}
 Function glCharsToTexts(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): glTextArray;
 var
   I, J, W, H, K: Integer;
@@ -556,6 +883,23 @@ begin
   end;
 end;
 
+{*
+  Turns an array of characters/fonts into a structure containing the legible text as well as
+  the bounding-box around each word.
+
+  Automatically removes all font/text shadows. Each Index in the array represents a new line.
+
+  Usage Info:
+      glTextArray := glCharsToText(glGetChars(ChatBox), 5, 5));
+      writeln(glTextArray[0].Text[0]);    //Prints a word in Line 1.
+      writeln(glTextArray[0].Bounds[0]);  //Prints the area in which a word in Line 1 was found.
+  etc..
+
+  Developer Info:
+    glChars     = List Of Fonts rendered on screen.
+    MinHSpacing = Minimum amount of space you think is between each character in the text (Horizontal spacing).
+    MinVSpacing = Minimum amount of space you think is between each new line in the text (Vertical spacing).
+*}
 Function glCharsToTextEx(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): glTextExArray;
 var
   I, J, K, W, H: Integer = 0;
@@ -593,7 +937,24 @@ begin
   end;
 end;
 
+{*
+  Turns an array of characters/fonts into a structure containing the legible text as well as
+  the bounding-box around each word and the colour of that word.
 
+  Automatically removes all font/text shadows. Each Index in the array represents a new line.
+
+  Usage Info:
+      glTextArray := glCharsToText(glGetChars(ChatBox), 5, 5));
+      writeln(glTextArray[0].Text[0]);    //Prints a word in Line 1.
+      writeln(glTextArray[0].Bounds[0]);  //Prints the area in which the word in Line 1 was found.
+      writeln(glTextArray[0].Colours[0]); //Prints the colour of the word in Line 1.
+  etc..
+
+  Developer Info:
+    glChars     = List Of Fonts rendered on screen.
+    MinHSpacing = Minimum amount of space you think is between each character in the text (Horizontal spacing).
+    MinVSpacing = Minimum amount of space you think is between each new line in the text (Vertical spacing).
+*}
 Function glCharsToTextAdv(var glChars: glCharArray; MinHSpacing, MinVSpacing: Integer = 5): glTextExArray;
 var
   I, J, K, L, W, H: Integer = 0;
