@@ -12,7 +12,7 @@
 {$include_once GLX/Minimap.Simba}
 {$include_once GLX/Interfaces.Simba}
 {$ifdef SMART}
-{$include_once GLX/Misc/Smart.Simba}
+  {$include_once GLX/Misc/Smart.Simba}
 {$else}
   {$ifdef SMARTOLD}
   {$include_once GLX/Misc/Smart8API.Simba}

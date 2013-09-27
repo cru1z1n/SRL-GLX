@@ -37,7 +37,7 @@ var
 
 Procedure TGraphics.Create(Img: Integer; Copy: Boolean = False);
 Begin
-  Self.__Bmp.Init(Client.GetMBitmaps);
+  //Self.__Bmp.Init();
   if (Copy) then
     Self.__Bmp := GetMufasaBitmap(CopyBitmap(Img))
   else
@@ -52,7 +52,7 @@ End;
 
 Procedure TGraphics.Create(Img: TMufasaBitmap; Copy: Boolean = False); overload
 Begin
-  Self.__Bmp.Init(Client.GetMBitmaps);
+  //Self.__Bmp.Init();
   if (Copy) then
     Self.__Bmp := GetMufasaBitmap(CopyBitmap(Img.GetIndex)) //Self.__Bmp := Img.Copy(0, 0, Img.Width, Img.Height)
   else
@@ -68,7 +68,7 @@ End;
 Procedure TGraphics.Create(Width, Height: Integer); overload;
 Begin
   Self.Free;
-  Self.__Bmp.Init(Client.GetMBitmaps);
+  Self.__Bmp.Init();
   Self.__Bmp.SetSize(Width, Height);
   Self.__Init := True;
   Self.__Width := Width;
@@ -80,7 +80,7 @@ End;
 
 Procedure TGraphics.Create(Width, Height: Integer; Ptr: Uint32); overload
 Begin
-  Self.__Bmp.Init(Client.GetMBitmaps);
+  Self.__Bmp.Init();
   Self.__Bmp.SetPersistentMemory(Ptr, Width, Height);
   Self.__Init := True;
   Self.__Width := Width;
@@ -235,7 +235,7 @@ Begin
   //Self.__Bmp.FastDrawTransparent(Location.X, Location.Y, Bitmap);
 End;
 
-Procedure TMufasaBitmap.DrawText(Text, Font: String; Position: TPoint = Point(0, 0); Colour: TColor = clRed);
+Procedure TGraphics.DrawText(Text, Font: String; Position: TPoint = Point(0, 0); Colour: TColor = clRed);
 var
   W, H: Integer;
   TPA: Array of TPoint;
@@ -258,19 +258,28 @@ Begin
       Self.__Bmp.DrawTPA([TPA[I]], Colour);
 End;
 
-Procedure TGraphics.DrawSystemText(Text, Font: String; Size: Integer; Position: TPoint; Color: TColor = clRed);
+Procedure TGraphics.DrawSystemText(Text, Font: String; Size: Integer; Position: TPoint = Point(0, 0); Colour: TColor = clRed);
 var
   F: TFont;
-  Bmp: Integer;
 Begin
   F.Init();
-  //F.Name := Font;
-  //F.Size := Size;
-  //F.Style := [];
-  //LoadSystemFont(Font, 'Temporary');
-  Bmp := BitmapFromText(Text, 'Temporary');
+  F.SetName(Font);
+  F.SetSize(Size);
+  LoadSystemFont(F, 'Temporary');
+  Self.DrawText(Text, 'Temporary', Position, Colour);
+  F.Free();
+End;
 
-  FreeBitmap(Bmp);
+Procedure TGraphics.DrawSystemText(Text, Font: String; Size: Integer; Style: TFontStyles; Position: TPoint = Point(0, 0); Colour: TColor = clRed); overload;
+var
+  F: TFont;
+Begin
+  F.Init();
+  F.SetName(Font);
+  F.SetSize(Size);
+  F.SetStyle(Style);
+  LoadSystemFont(F, 'Temporary');
+  Self.DrawText(Text, 'Temporary', Position, Colour);
   F.Free();
 End;
 

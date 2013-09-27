@@ -162,6 +162,41 @@ begin
 end;
 
 {*
+  Converts the specified Main Screen Point to the corresponding location on the
+  Minimap.
+*}
+Function GL_MSToMM(MSP: TPoint): TPoint;
+var
+  Loc: TPoint;
+  MMBounds: TBox;
+  TL, BL, BR, TR: FloatPoint;
+  X, Y, X1, Y1, X2, Y2: Integer;
+  W, H, DX, DY, RatioX, RatioY, Angle: Extended;
+begin
+  MMBounds := GL_MMBounds;
+  GLXViewPort(X1, Y1, X2, Y2);
+  W := X2 - X1; H := Y2 - Y1;
+  RatioX := W / MMBounds.Width;
+  RatioY := H / MMBounds.Height;
+
+  DX := (MSP.X - (W / 2));
+  DY := (MSP.Y - (H / 2));
+  DX := DX / RatioX;
+  DY := DY / RatioY;
+
+  MSP.X := MMBounds.MidPoint.X;
+  MSP.Y := MMBounds.MidPoint.Y;
+
+  GL_GetMapCoords(TL, BL, BR, TR);
+  Angle := FixRad(ArcTan2(TR.Y - TL.Y, TR.X - TL.X));
+  Result.X := Round(MSP.X + DX);
+  Result.Y := Round(MSP.Y + DY);
+  Result := RotatePoint(Result, Angle, MSP.X, MSP.Y);
+  Result.X := Result.X + (MMBounds.Width div 256);
+  Result.Y := Result.Y - (MMBounds.Height div 64);
+end;
+
+{*
   Returns the player's local position within the current MAP.
 *}
 Function GL_GetLocalPos: TPoint;

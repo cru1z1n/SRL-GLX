@@ -182,27 +182,6 @@ begin
   inherited();
 end;
 
-procedure AddOnTerminate(const Proc: string);
-var
-  I, L: Integer;
-begin
-  For I := 0 To High(OnTerminateProcs) Do
-    if (OnTerminateProcs.Contains(Proc, False)) then
-      Exit;
-
-  L := Length(OnTerminateProcs);
-  SetLength(OnTerminateProcs, L + 1);
-  OnTerminateProcs[L] := Proc;
-end;
-
-procedure AddOnTerminate(const Procs: TStringArray); overload;
-var
-  I: Integer;
-begin
-  For I := 0 To High(OnTerminateProcs) Do
-    AddOnTerminate(Procs[I]);
-end;
-
 Function GetDirectoryName(Directory, Path: String): String;
 var
   I: Integer;
