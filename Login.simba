@@ -10,16 +10,19 @@
       - Interacting with the lobby
 *}
 
-{$include_once GLX/Mouse.Simba}
-{$IFDEF SMARTOLD}
-{$include_once GLX/Misc/SMART8API.Simba}
-{$ELSE IF SMART}
-{$include_once GLX/Misc/SMART.Simba}
-{$ENDIF}
+{$include_once Mouse.Simba}
+{$IFNDEF SRLCompatibility}
+  {$IFDEF SMARTOLD}
+    {$include_once Misc/SMART8API.Simba}
+  {$ELSE}
+    {$IFDEF SMART}
+      {$include_once Misc/SMART.Simba}
+    {$ENDIF}
+  {$ENDIF}
 
-{$IFDEF SMART}
-Procedure SetupGLX(var Smart: TSmart; Width, Height: Integer); Forward;
-{$ENDIF}
+  {$IFDEF SMART}
+  Procedure SetupGLX(var Smart: TSmart; Width, Height: Integer); Forward;
+  {$ENDIF}
 
 type TPlayer = record
   Name: String;
@@ -28,6 +31,7 @@ type TPlayer = record
   Pin: String;
   World: TIntegerArray;
 end;
+{$ENDIF}
 
 {*
   Returns whether or not the current player is in game/logged in fully.
@@ -102,6 +106,7 @@ End;
 {*
   Returns whether it was successful at restarting the specified Smart Client.
 *}
+{$IFNDEF SRLCompatibility}
 Function GL_RestartClient{$IFDEF SMART}(var Smart: TSmart){$ENDIF}: Boolean;
 var
   W, H: Integer;
@@ -115,6 +120,7 @@ Begin
   {$ENDIF}
   Result := GL_RSReady;
 End;
+{$ENDIF}
 
 {*
   Returns whether it successfully exited to the lobby from in game or if the player is
@@ -195,7 +201,11 @@ Begin
     Text := glCharsToTexts(glGetChars(Area), 2, 5);
     If (Length(Text) > 0) Then
     Begin
+      {$IFNDEF SRLCompatibility}
       Mouse(Text[0].Bounds.X2, (Text[0].Bounds.Y1 + Text[0].Bounds.Y2) div 2, 2, 2, MOUSE_LEFT);
+      {$ELSE}
+      Mouse(Point(Text[0].Bounds.X2, (Text[0].Bounds.Y1 + Text[0].Bounds.Y2)));
+      {$ENDIF}
       While(Length(Text) > 0) Do
       Begin
         Text := glCharsToTexts(glGetChars(Area), 2, 5);
@@ -208,10 +218,19 @@ Begin
 
     If (I = 0) Then
     Begin
+      {$IFNDEF SRLCompatibility}
       WriteLn(Capitalize(Player.Name));
       TypeSend(Player.Name);
+      {$ELSE}
+      WriteLn(Capitalize(Player.loginName));
+      TypeSend(Player.loginName);
+      {$ENDIF}
     End Else
+      {$IFNDEF SRLCompatibility}
       TypeSend(Player.Pass);
+      {$ELSE}
+      TypeSend(Player.password);
+      {$ENDIF}
     Wait(800 + Random(50));
   End;
 
@@ -232,7 +251,7 @@ End;
 
   Developer Info:
     95625     - TextureID of the Play Button on the lobby screen.
-    2461367   - ColourID of the Play button on the lobby screen.
+    12029477   - ColourID of the Play button on the lobby screen.
 *}
 Function GL_LoginPlayer(Player: TPlayer): Boolean;
 var
@@ -243,7 +262,7 @@ Begin
   If (Not GL_LoggedIn) Then
     If (GL_LoginToLobby(Player)) Then
     Begin
-      PlayButton := glGetTextures(95625, 2461367, 10);
+      PlayButton := glGetTextures(95625, 12029477, 10);
       L := Length(PlayButton);
       If (L > 0) Then
       Begin

@@ -1,9 +1,8 @@
+{$IFNDEF SRLCompatibility}
 const
-  MOUSE_NIL   = -1;
-  //MOUSE_RIGHT = 0;
-  //MOUSE_LEFT  = 1;
+  MOUSE_NONE   = -1;
   MOUSE_MOVE  = 3;
-  MOUSE_WHEEL = 4;
+{$ENDIF}
 
 
 {* By: Benland100 *}
@@ -79,6 +78,7 @@ Begin
 End;
 
 {* By: Benland100; Modified by: Brandon *}
+{$IFNDEF SRLCompatibility}
 Procedure Mouse(X, Y: Integer; RX, RY: integer = 0; ClickType: Integer = Mouse_Move);
 var
   cx, cy : integer;
@@ -102,7 +102,9 @@ Procedure Mouse(P: TPoint; RX, RY: Integer = 0; ClickType: Integer = Mouse_Move)
 Begin
   Mouse(P.X, P.Y, RX, RY, ClickType);
 End;
+{$ENDIF}
 
+{$IFNDEF SRLCompatibility}
 Procedure MouseBox(Box: TBox; ClickType: Integer = Mouse_Move);
 Begin
   Mouse(MiddleBox(Box).X, MiddleBox(Box).Y, 3, 3, ClickType);
@@ -112,6 +114,7 @@ Procedure MouseBox(X1, Y1, X2, Y2: Integer; ClickType: Integer = Mouse_Move); ov
 Begin
   MouseBox(IntToBox(X1, Y1, X2, Y2), ClickType);
 End;
+{$ENDIF}
 
 Function DidYellowClick: Boolean;
 Begin

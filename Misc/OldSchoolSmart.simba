@@ -1,6 +1,6 @@
 {$loadlib libsmartremote}
-{$include_once GLX/Internals.Simba}
-{$include_once GLX/Misc/Graphics.Simba}
+{$include_once ..\Internals.Simba}
+{$include_once Graphics.Simba}
 
 var
   __Smart__Pointers: Array Of Pointer;

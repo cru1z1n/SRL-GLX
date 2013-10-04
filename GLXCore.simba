@@ -13,11 +13,11 @@
 
 
 {$loadlib GLX}
-{$include_once GLX/Internals.Simba}
+{$include_once Internals.Simba}
 //OffsetOf - PtrUInt(@(CStruct(nil + 1)^.Y)) - 1;
 
 type
-  GL_DEBUG_MODE = (GL_MODE_NONE, GL_MODE_TEXTURES, GL_MODE_MODELS, GL_MODE_FONTS, GL_MODE_HUD);
+  GL_DEBUG_MODE = (GL_MODE_NONE, GL_MODE_TEXTURES, GL_MODE_MODELS, GL_MODE_FONTS, GL_MODE_DISPLAY);
 
 
 type glTexture = record
@@ -123,24 +123,24 @@ End;
     GL_MODE_FONTS    = Debug Fonts on screen. X1, Y1, X2, Y2 specifies the clipping
                        area in which the fonts must lie.
 
-    GL_MODE_HUD      = Debug as well as draw on screen any texture with the ID specified by
-                       HudID. Other parameters have no effect.
+    GL_MODE_DISPLAY  = Debug as well as draw on screen any texture with the ID specified by
+                       TextureID. Other parameters have no effect.
 *}
-Procedure glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal = 0; X1, Y1, X2, Y2: Integer = 0);
+Procedure glDebug(Mode: GL_DEBUG_MODE; TextureID, ColourID, FullColourID: Cardinal = 0; Tolerance, X1, Y1, X2, Y2: Integer = 0);
 Begin
-  GLXDebug(Ord(Mode), HudID, X1, Y1, X2, Y2);
+  GLXDebug(Ord(Mode), TextureID, ColourID, FullColourID, Tolerance, X1, Y1, X2, Y2);
 End;
 
 {*
   Enabled Debugging of any OpenGL type. A convenience overload.
 
   Usage Info:
-    Same as glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal = 0; X1, Y1, X2, Y2: Integer = 0);
+    Same as glDebug(Mode: GL_DEBUG_MODE; TextureID, ColourID: Cardinal; Tolerance, X1, Y1, X2, Y2: Integer);
     but instead takes a TBox instead of X1, Y1, X2, Y2.
 *}
-Procedure glDebug(Mode: GL_DEBUG_MODE; HudID: Cardinal; Area: TBox); overload;
+Procedure glDebug(Mode: GL_DEBUG_MODE; TextureID, ColourID, FullColourID: Cardinal; Tolerance: Integer; Area: TBox); overload;
 Begin
-  GLXDebug(Ord(Mode), HudID, Area.X1, Area.Y1, Area.X2, Area.Y2);
+  GLXDebug(Ord(Mode), TextureID, ColourID, FullColourID, Tolerance, Area.X1, Area.Y1, Area.X2, Area.Y2);
 End;
 
 {*
@@ -342,7 +342,7 @@ End;
     2 - glGetTextures(LobsterID, LobsterColourID, 5);
     3 - etc..
 *}
-Function glGetTextures(ID, ColourID, Tolerance: Integer): glTextureArray; overload;
+Function glGetTextures(ID, ColourID, Tolerance: Integer; FullColourID: Boolean = False): glTextureArray; overload;
 var
   Ptr: Pointer;
   Size, I, J: Cardinal;
@@ -353,7 +353,10 @@ Begin
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
-  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
+  If (Not FullColourID) Then
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1)
+  Else
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.FullColourID)) - 1)
 
   For I := 0 To Size - 1 Do
   Begin
@@ -379,7 +382,7 @@ End;
     3 - glGetTextures(ArrayOfIDs, ArrayOfColourIDs, ArrayOfTolerances);
     4 - etc..
 *}
-Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray): glTextureArray; overload;
+Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray; FullColourID: Boolean = False): glTextureArray; overload;
 var
   Ptr: Pointer;
   Size, I, J, K: Cardinal;
@@ -390,7 +393,10 @@ Begin
   Result := [];
   Ptr := GLXTextures(Size);
   SetLength(Result, Size);
-  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
+  If (Not FullColourID) Then
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1)
+  Else
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.FullColourID)) - 1)
 
   For I := 0 To Size - 1 Do
   Begin
@@ -418,7 +424,7 @@ End;
     2 - glGetTextures(LobsterID, LobsterColourID, 5, BankBounds);
     3 - etc..
 *}
-Function glGetTextures(ID, ColourID, Tolerance: Integer; Area: TBox): glTextureArray; overload;
+Function glGetTextures(ID, ColourID, Tolerance: Integer; Area: TBox; FullColourID: Boolean = False): glTextureArray; overload;
 var
   Ptr: Pointer;
   Size, I, J: Cardinal;
@@ -432,7 +438,10 @@ Begin
   SetLength(Result, Size);
   XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
   YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
-  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
+  If (Not FullColourID) Then
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1)
+  Else
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.FullColourID)) - 1)
 
   For I := 0 To Size - 1 Do
   Begin
@@ -460,7 +469,7 @@ End;
     3 - glGetTextures(ArrayOfIDs, ArrayOfColourIDs, ArrayOfTolerances, AreaToSearch);
     4 - etc..
 *}
-Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray; Area: TBox): glTextureArray; overload;
+Function glGetTextures(IDs, ColourIDs, Tolerances: TIntegerArray; Area: TBox; FullColourID: Boolean = False): glTextureArray; overload;
 var
   Ptr: Pointer;
   Size, I, J, K: Cardinal;
@@ -474,7 +483,10 @@ Begin
   SetLength(Result, Size);
   XOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.X)) - 1);
   YOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.Y)) - 1);
-  ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1);
+  If (Not FullColourID) Then
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.ColourID)) - 1)
+  Else
+    ColourIDOffset := (PtrUInt(@(ptr_glTexture(nil + 1)^.FullColourID)) - 1)
 
   For I := 0 To Size - 1 Do
   Begin

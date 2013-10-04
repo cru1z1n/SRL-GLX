@@ -1,8 +1,7 @@
+{$IFNDEF SRLCompatibility}
 const
   VK_ENTER = 13;
-
-var
-  OnTerminateProcs: TStringArray;
+{$ENDIF}
 
 type Timer = record
   Time: Int64;
@@ -23,6 +22,7 @@ Begin
   Result := GetSystemTime - Time;
 End;
 
+{$IFNDEF SRLCompatibility}
 Procedure TypeByte(B: Byte);
 Begin
   {$IFDEF SMART}
@@ -33,7 +33,9 @@ Begin
   Wait(10 + Random(50));
   KeyUp(B);
 End;
+{$ENDIF}
 
+{$IFNDEF SRLCompatibility}
 Procedure TypeSend(Text: String; Send: Boolean = True);
 var
   I: Integer;
@@ -51,6 +53,7 @@ Begin
   If (Send) Then
     TypeByte(VK_ENTER);
 End;
+{$ENDIF}
 
 Procedure Pointer.Inc(Size: Int64);
 Begin
@@ -171,17 +174,6 @@ Begin
   Result := GetTPABounds(TPA);
 End;
 
-procedure TerminateScript; override;
-var
-  I: Integer;
-begin
-  For I := 0 to High(OnTerminateProcs) Do
-  begin
-    VariantInvoke(OnTerminateProcs[I]);
-  end;
-  inherited();
-end;
-
 Function GetDirectoryName(Directory, Path: String): String;
 var
   I: Integer;
@@ -201,6 +193,7 @@ Begin
   Result := Length(GetDirectoryName(Directory, Path)) > 0;
 End;
 
+{$IFNDEF SRLCompatibility}
 Function GetJavaPath(Console: Boolean): String;
 var
   Drive: String;
@@ -244,3 +237,4 @@ Begin
   Else
     writeln('Failed To Find Java.exe or Javaw.exe. Please add ...\JRE\Bin to your PATH environment variable.');
 End;
+{$ENDIF}

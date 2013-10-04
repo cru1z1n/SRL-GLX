@@ -1,4 +1,4 @@
-{$include_once GLX/Text.Simba}
+{$include_once Text.Simba}
 
 Function GL_WaitOption(Options: TStringArray; Action: Integer; Time: Integer): Boolean;
 var

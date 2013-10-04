@@ -4,8 +4,9 @@
 //TODO: FIx TMufasaBitmap.FastDrawTransparent.       Needs Exporting.
 //TODO: Fix Self implicit this vs. parameter confusion. <-- Glitch.
 
-{$include_once GLX/Internals.Simba}
+{$include_once ..\Internals.Simba}
 
+{$IFNDEF SRLCompatibility}
 const
   clBlack = 0;
   clWhite = 16777215;
@@ -24,6 +25,7 @@ const
   clFuchsia = 16711935;
   clNavy = 8388608;
   clMaroon = 128;
+{$ENDIF}
 
 type TGraphics = record
   __Bmp: TMufasaBitmap;

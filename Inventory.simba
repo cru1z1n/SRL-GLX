@@ -6,9 +6,9 @@
 
 
 
-{$include_once GLX/GLXCore.Simba}
-{$include_once GLX/Bank.Simba}
-{$include_once GLX/Cache.Simba}
+{$include_once GLXCore.Simba}
+{$include_once Bank.Simba}
+{$include_once Cache.Simba}
 
 {*
   Returns the Bounding-Box of the inventory.

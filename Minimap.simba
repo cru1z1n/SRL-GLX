@@ -9,9 +9,9 @@
       - Map Images
 *}
 
-{$include_once GLX/GLXCore.Simba}
-{$include_once GLX/Cache.Simba}
-{$include_once GLX/Misc/Graphics.Simba}
+{$include_once GLXCore.Simba}
+{$include_once Cache.Simba}
+{$include_once Misc/Graphics.Simba}
 
 type FloatPoint = record
   X, Y: Single;

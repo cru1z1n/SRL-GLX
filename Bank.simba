@@ -303,7 +303,7 @@ Begin
         -0: Result := GL_ChooseOption('-All');
       Else
         Begin
-          Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_NIL);
+          Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_NONE);
           If (Not Result) Then
           Begin
             If GL_ChooseOption('-X') Then
@@ -361,7 +361,7 @@ Begin
         -0: Result := GL_ChooseOption('-All');
       Else
         Begin
-          Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_NIL);
+          Result := GL_ChooseOption(['-' + ToStr(Amount) + ' '], MOUSE_NONE);
           If (Not Result) Then
           Begin
             If GL_ChooseOption('-X') Then

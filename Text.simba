@@ -9,8 +9,8 @@
       - Determining whether right click options exist.
 *}
 
-{$include_once GLX/GLXCore.Simba}
-{$include_once GLX/Cache.Simba}
+{$include_once GLXCore.Simba}
+{$include_once Cache.Simba}
 
 
 {*
@@ -203,9 +203,15 @@ Begin
   If (TP.X <> -1 And TP.Y <> -1) Then
   Begin
     Case Action Of
+      {$IFNDEF SRLCompatibility}
       MOUSE_MOVE:  Mouse(TP.X, TP.Y, 6, 3);
       MOUSE_LEFT:  Mouse(TP.X, TP.Y, 6, 3, MOUSE_LEFT);
       MOUSE_RIGHT: Mouse(TP.X, TP.Y, 6, 3, MOUSE_RIGHT);
+      {$ELSE}
+      MOUSE_MOVE:  Mouse(TP);
+      MOUSE_LEFT:  Mouse(TP, MOUSE_LEFT);
+      MOUSE_RIGHT: Mouse(TP, MOUSE_RIGHT);
+      {$ENDIF}
     End;
     Result := True;
   End;
@@ -232,16 +238,16 @@ End;
 
   Developer Info:
     6120      - TextureID of the top corners of the right-click interface.
-    8882055   - ColourID of the top corners of the right-click interface.
+    5921370   - ColourID of the top corners of the right-click interface.
     8925      - TextureID of the bottom corners of the right-click interface.
-    10461087  - ColourID of the bottom corners of the right-click interface.
+    4079167  - ColourID of the bottom corners of the right-click interface.
 *}
 Function GL_GetChooseOptions(var MenuBounds: TBox): glTextArray;
 var
   TL, LR: glTextureArray;
 Begin
-  TL := glGetTextures(6120, 8882055, 5);
-  LR := glGetTextures(8925, 10461087, 5);
+  TL := glGetTextures(6120, 5921370, 5);
+  LR := glGetTextures(8925, 4079167, 5);
 
   If ((Length(TL) < 1) Or (Length(LR) < 1)) Then Exit;
   MenuBounds := IntToBox(TL[0].Bounds.X1, TL[0].Bounds.Y2, LR[1].Bounds.X2, LR[1].Bounds.Y2);
@@ -284,7 +290,7 @@ Begin
           MOUSE_MOVE:  If (Not PointInBox(MP, Bounds)) Then
                          MouseBox(Bounds, MOUSE_MOVE);
 
-          MOUSE_NIL:   Begin End;
+          MOUSE_NONE:   Begin End;
 
           Else
             Writeln('CLICK LEFT IS AN INVALID OPTION');
@@ -293,12 +299,16 @@ Begin
       End;
     End;
 
-  If (Action <> MOUSE_NIL) Then
+  If (Action <> MOUSE_NONE) Then
   Begin
     I := Max(MenuBounds.X1 + RandomRange(15, 50), 0);
     If (I = 0) Then
       I := MenuBounds.X2 + RandomRange(10, 50);
+    {$IFNDEF SRLCompatibility}
     Mouse(I, Max(MenuBounds.Y1 - RandomRange(40, 50), 0), 5, 5);
+    {$ELSE}
+    Mouse(Point(I, Max(MenuBounds.Y1 - RandomRange(40, 50), 0)));
+    {$ENDIF}
   End;
 End;
 
@@ -328,5 +338,5 @@ Begin
   If MoveMouse Then
     Result := GL_ChooseOption(Options, MOUSE_MOVE)
   Else
-    Result := GL_ChooseOption(Options, MOUSE_NIL);
+    Result := GL_ChooseOption(Options, MOUSE_NONE);
 End;

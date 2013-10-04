@@ -1,7 +1,7 @@
 {$DEFINE SMART}
 {$loadlib libsmartremote}
-{$include_once GLX/Internals.Simba}
-{$include_once GLX/Misc/Graphics.Simba}
+{$include_once ..\Internals.Simba}
+{$include_once Graphics.Simba}
 
 type TSmart = record
   __PID: Integer;
