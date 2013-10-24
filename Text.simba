@@ -18,15 +18,15 @@
   object or interface in game from Upper left to lower right.
 
   Developer Info:
-    8814    - TextureID of the top corners of the box.
-    8936    - TextureID of the bottom corners of the box.
+    14418    - TextureID of the top corners of the box.
+    15878    - TextureID of the bottom corners of the box.
 *}
 Function GL_MouseHoverBounds: TBox;
 var
   UL, BR: glTextureArray;
 Begin
-  UL := glGetTextures(8814);
-  BR := glGetTextures(8936);
+  UL := glGetTextures(14418);
+  BR := glGetTextures(15878);
   If ((Length(UL) > 0) and (Length(BR) > 0)) then
     Result := IntToBox(UL[0].Bounds.X1, UL[0].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2);
 End;
@@ -36,15 +36,15 @@ End;
   Upper right to lower left.
 
   Developer Info:
-    8814    - TextureID of the top corners of the box.
-    8936    - TextureID of the bottom corners of the box.
+    14418    - TextureID of the top corners of the box.
+    15878    - TextureID of the bottom corners of the box.
 *}
 Function GL_InterfaceUpTextBounds: TBox;
 var
   UL, BR: glTextureArray;
 Begin
-  UL := glGetTextures(8814);
-  BR := glGetTextures(8936);
+  UL := glGetTextures(14418);
+  BR := glGetTextures(15878);
   If ((Length(UL) >= 2) and (Length(BR) >= 2)) then
     Result := IntToBox(UL[High(UL)].Bounds.X1, UL[High(UL)].Bounds.Y1, BR[High(BR)].Bounds.X2, BR[High(BR)].Bounds.Y2);
 End;
@@ -54,15 +54,15 @@ End;
   or interface regardless of Box rendering order.
 
   Developer Info:
-    8814    - TextureID of the top corners of the box.
-    8936    - TextureID of the bottom corners of the box.
+    14418    - TextureID of the top corners of the box.
+    15878    - TextureID of the bottom corners of the box.
 *}
 Function GL_UptextBounds: TBox;
 var
   UL, BR: glTextureArray;
 Begin
-  UL := glGetTextures(8814);
-  BR := glGetTextures(8936);
+  UL := glGetTextures(14418);
+  BR := glGetTextures(15878);
   If ((Length(UL) >= 2) and (Length(BR) >= 2)) Then
   Begin
     If (UL[0].X < UL[High(UL)].X) Then
@@ -81,7 +81,7 @@ var
 Begin
   glChars := glGetChars(GL_UptextBounds);
   If (Length(glChars) > 0) then
-    Result := glCharsToText(glChars, 5, 5);
+    Result := glCharsToText(glChars, 3, 5);
 End;
 
 {*

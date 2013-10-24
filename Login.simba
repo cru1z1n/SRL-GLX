@@ -250,8 +250,8 @@ End;
   from the lobby screen to In-Game.
 
   Developer Info:
-    95625     - TextureID of the Play Button on the lobby screen.
-    12029477   - ColourID of the Play button on the lobby screen.
+    91275     - TextureID of the Play Button on the lobby screen.
+    12483092   - ColourID of the Play button on the lobby screen.
 *}
 Function GL_LoginPlayer(Player: TPlayer): Boolean;
 var
@@ -262,7 +262,7 @@ Begin
   If (Not GL_LoggedIn) Then
     If (GL_LoginToLobby(Player)) Then
     Begin
-      PlayButton := glGetTextures(95625, 12029477, 10);
+      PlayButton := glGetTextures(91275, 12483092, 10);
       L := Length(PlayButton);
       If (L > 0) Then
       Begin

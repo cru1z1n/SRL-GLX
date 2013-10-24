@@ -70,7 +70,7 @@ End;
 Procedure TGraphics.Create(Width, Height: Integer); overload;
 Begin
   Self.Free;
-  Self.__Bmp.Init();
+  Self.__Bmp.Init(Client.GetMBitmaps);
   Self.__Bmp.SetSize(Width, Height);
   Self.__Init := True;
   Self.__Width := Width;
@@ -82,7 +82,7 @@ End;
 
 Procedure TGraphics.Create(Width, Height: Integer; Ptr: Uint32); overload
 Begin
-  Self.__Bmp.Init();
+  Self.__Bmp.Init(Client.GetMBitmaps);
   Self.__Bmp.SetPersistentMemory(Ptr, Width, Height);
   Self.__Init := True;
   Self.__Width := Width;
