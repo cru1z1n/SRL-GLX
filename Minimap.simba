@@ -221,6 +221,31 @@ Begin
   Result.Y := Round(((PPY * TVX) - (PPX * TVY)) * 512.0 / PPZ);
 End;
 
+Function GL_GetLocalMapPos(var MapPtr: Pointer): TPoint;
+var
+  Player: TPoint;
+  PPX, PPY, PPZ: Double;
+  TVX, TVY, BVX, BVY: Double;
+  X, Y: Array[0..3] of Single;
+Begin
+  If (Not GL_LoggedIn) Then Exit;
+
+  Player.X = 512;
+  Player.Y = 512;
+  MapPtr := GLXMap(Player.X, Player.Y, X, Y);
+  Player := MiddleBox(GL_MMBounds);
+
+  TVX := X[3] - X[0];
+  TVY := Y[3] - Y[0];
+  BVX := X[1] - X[0];
+  BVY := Y[1] - Y[0];
+  PPX := Player.X - X[0];
+  PPY := Player.Y - Y[0];
+  PPZ := (TVX * BVY) - (TVY * BVX);
+  Result.X := Round(((PPX * BVY) - (PPY * BVX)) * 512.0 / PPZ);
+  Result.Y := Round(((PPY * TVX) - (PPX * TVY)) * 512.0 / PPZ);
+End;
+
 {*
   Returns the current compass angle in Degrees and Radians.
 *}
@@ -300,7 +325,11 @@ Begin
 End;
 
 {*
-  Returns the current loaded map as a bitmap.
+  Returns the current loaded map as a bitmap with outline stripped.
+
+  Developer Notes:
+    Original Size:        512x512
+    Returned Bitmap Size: 408x408
 *}
 Function GL_MapToImage: Integer;
 var
@@ -314,10 +343,29 @@ begin
   Height := 512;
   Offset := Width * Chunk * (sizeof(byte) * 4) + (Chunk * (sizeof(byte) * 4));
   Bmp.Create(Width, Height - (2 * Chunk), UInt32(GLXMap(Width, Height, X, Y) + Offset));
-  Result := CreateMirroredBitmapEx(Bmp.__Bmp.GetIndex, MirrorHeight);
+  Result := CreateMirroredBitmapEx(Bmp.GetInternalBitmap().GetIndex, MirrorHeight);
   SetBitmapSize(Result, 512 - (2 * Chunk), 512 - (2 * Chunk));
   Bmp.Free();
 end;
+
+{*
+  Returns the current loaded map as a bitmap.
+
+  Developer Notes:
+    Returned Bitmap Size:  512x512
+*}
+Function GL_MapToImageEx: Integer;
+var
+  X, Y: Array[0..3] of Single;
+  Bmp: TGraphics;
+  W, H: Integer;
+begin
+  W := 512;
+  H := 512;
+  Bmp.Create(W, H, UInt32(GLXMap(W, H, X, Y)));
+  Result := CreateMirroredBitmapEx(Bmp.GetInternalBitmap().GetIndex, MirrorHeight);
+  Bmp.Free();
+end;s
 
 {Function GL_MakeCompassHeight(Height: Integer; Tolerance: Integer = 4): Boolean;
 var

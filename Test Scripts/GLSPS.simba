@@ -1,0 +1,115 @@
+{$DEFINE SMART}
+{$include_once GLX/Setup.Simba}
+
+Function GL_LocalPosToMMPos(Pos: TPoint): TPoint;
+var
+  Me: TPoint;
+  DX, DY: Integer;
+Begin
+  Me := GL_GetLocalPos;
+  DX := Pos.X - Me.X;
+  DY := Pos.Y - Me.Y;
+
+  Me := MiddleBox(GL_MMBounds);
+  Result.X := Me.X + DX;
+  Result.Y := Me.Y + DY;
+End;
+
+Procedure DebugBitmap(Bmp: Integer);
+var
+  W, H: Integer;
+Begin
+  GetBitmapSize(Bmp, W, H);
+  DisplayDebugImgWindow(W, H);
+  DrawBitmapDebugImg(Bmp);
+End;
+
+Procedure CropBitmap(var Bmp: Integer; XS, YS, XE, YE: Integer);
+var
+  T, Old, New: Integer;
+Begin
+  Old := GetImageTarget;
+  New := SetTargetBitmap(Bmp);
+  T := BitmapFromClient(XS, YS, XE, YE);
+  SetImageTarget(Old);
+  FreeTarget(New);
+  FreeBitmap(Bmp);
+  Bmp := T;
+End;
+
+Function GL_GetMyPos(WorldMap: Integer): TPoint;
+var
+  Pos: TPoint;
+  CMap: Integer;
+  Width, Height: Integer;
+  OldTarget, NewTarget: Integer;
+Begin
+  OldTarget := GetImageTarget;
+  NewTarget := SetTargetBitmap(WorldMap);
+  GetBitmapSize(WorldMap, Width, Height);
+
+  Pos := GL_GetLocalPos;
+  CMap := GL_MapToImageEx;
+  CropBitmap(CMap, Pos.X - 50, Pos.Y - 50, Pos.X + 50, Pos.Y + 50);
+
+  Pos := Point(-1, -1);
+  If (FindBitmapToleranceIn(CMap, Pos.X, Pos.Y, 0, 0, Width - 1, Height - 1, 50)) Then
+    Result := Point(Pos.X + 50, Pos.Y + 50);
+
+  SetImageTarget(OldTarget);
+  FreeTarget(NewTarget);
+  FreeBitmap(CMap);
+End;
+
+Function GL_GetMyPosEx(WorldMap: Integer): TPoint;
+var
+  Pos: TPoint;
+  CMap: Integer;
+  Bmp: TGraphics;
+  MapPtr: Pointer;
+  Width, Height: Integer;
+  OldTarget, NewTarget: Integer;
+Begin
+  OldTarget := GetImageTarget;
+  NewTarget := SetTargetBitmap(WorldMap);
+  GetBitmapSize(WorldMap, Width, Height);
+
+  Pos := GL_GetLocalMapPos(MapPtr);
+  Bmp.Create(512, 512, UInt32(MapPtr));
+  CMap := CreateMirroredBitmapEx(Bmp.GetInternalBitmap().GetIndex, MirrorHeight);
+  Bmp.Free();
+
+  CropBitmap(CMap, Pos.X - 50, Pos.Y - 50, Pos.X + 50, Pos.Y + 50);
+
+  Pos := Point(-1, -1);
+  If (FindBitmapToleranceIn(CMap, Pos.X, Pos.Y, 0, 0, Width - 1, Height - 1, 50)) Then
+    Result := Point(Pos.X + 50, Pos.Y + 50);
+
+  SetImageTarget(OldTarget);
+  FreeTarget(NewTarget);
+  FreeBitmap(CMap);
+End;
+
+var
+  Smart: TSmart;
+  Bmp: Integer;
+  MMPos: TPoint;
+  T: Timer;
+begin
+  ClearDebug;
+  SetupGLX(Smart, 1350, 670);
+  GLDebug(GL_DEBUG_MODE.GL_MODE_TEXTURES, 0, 0, 0, 0, 0, 0, Smart.Width, Smart.Height);
+  GLXSetFontCapture(False);
+
+  //SaveBitmap(GL_MapToImage, 'C:/Users/Brandon/Desktop/World.bmp');
+
+  Bmp := LoadBitmap('C:/Users/Brandon/Desktop/World.bmp');
+  while(true) do
+  begin
+    T.Start;
+    writeln(GL_GetMyPosEx(Bmp));
+    writeln('Found in: ', T.TimeElapsed);
+    Sleep(1);
+  end;
+  FreeBitmap(Bmp);
+end.
