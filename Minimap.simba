@@ -17,11 +17,6 @@ type FloatPoint = record
   X, Y: Single;
 end;
 
-Function SeeFlag:boolean;
-begin
-   Result:= Length(glGetTextures(1275, GL_MMBounds)) > 0;
-end;
-
 {*
   Constructor for a floating point version of the TPoint structure.
 *}
@@ -150,6 +145,11 @@ Begin
       Exit;
     End;
 End;
+
+Function SeeFlag:boolean;
+begin
+   Result:= Length(glGetTextures(1275, GL_MMBounds)) > 0;
+end;  
 
 {*
   Returns the coordinates of the MAP within the minimap.
