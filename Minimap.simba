@@ -19,7 +19,7 @@ end;
 
 Function SeeFlag:boolean;
 begin
-   Result:= Length(glGetTextures(FlagTexture, GL_MMBounds)) > 0;
+   Result:= Length(glGetTextures(1275, GL_MMBounds)) > 0;
 end;
 
 {*
