@@ -17,6 +17,11 @@ type FloatPoint = record
   X, Y: Single;
 end;
 
+Function SeeFlag:boolean;
+begin
+   Result:= Length(glGetTextures(FlagTexture, GL_MMBounds)) > 0;
+end;
+
 {*
   Constructor for a floating point version of the TPoint structure.
 *}
